@@ -208,6 +208,7 @@ CHANGE LOG
 1.1.0
 	- Error messages more akin to official errors.
 	- Deleted check for varlist with misfits, made no sense (?)
+	- Implemented setseed option
 1.0.5
 	- Much improved help file.
 1.0.4
@@ -233,6 +234,5 @@ TODOS (AND IDEAS TO MAKE RANDTREAT EVEN COOLER)
 - Support for [by](?) May be redundant/confusing.
 - Store in e() and r(): seed? seed stage?
 
-net from https://raw.github.com/acarril/personal/master/
 */
 
