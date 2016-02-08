@@ -1,7 +1,7 @@
 OFF (to make site unavailable temporarily)
 * lines starting with * are comments; they are ignored
 * blank lines are ignored, too
-* v indicates version—specify v 3, which is the current version of .toc files
+* v indicates versionâ€”specify v 3, which is the current version of .toc files
 v 3
 * d lines display description text
 * the first d line is the title, and the remaining ones are text
