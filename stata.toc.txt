@@ -1,0 +1,24 @@
+OFF (to make site unavailable temporarily)
+* lines starting with * are comments; they are ignored
+* blank lines are ignored, too
+* v indicates version—specify v 3, which is the current version of .toc files
+v 3
+* d lines display description text
+* the first d line is the title, and the remaining ones are text
+* blank d lines display a blank line
+d title
+d text
+d text
+d
+. . .
+* l lines display links
+l word-to-show path-or-url [description]
+l word-to-show path-or-url [description]
+. . .
+* t lines display other directories within the site
+t path [description]
+t path [description]
+. . .
+* p lines display packages
+p pkgname [description]
+p pkg
