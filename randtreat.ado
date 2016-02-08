@@ -1,16 +1,16 @@
-*! 1.0.5 Alvaro Carril 31oct2015
+*! 1.1.0 Alvaro Carril 07feb2016
 program define randtreat
 	version 11
 
 syntax [varlist(default=none)] /// 
-[, Sortvar(varname) MUlt(integer 0) MIsfits(string) Uneven(string) Replace]
+	[, Replace Keepsort SEtseed(integer 1234) Uneven(string) MUlt(integer 0) MIsfits(string)]
 
 ********************
 *** Input checks ***
 ********************
 
 *** uneven() ***
-* If not specified, complete uneven() to be... even.
+** If not specified, complete it to be even according to mult() fractions.
 if missing("`uneven'") {
 	if `mult'==0  {
 		local mult = 2
@@ -19,7 +19,7 @@ if missing("`uneven'") {
 		local uneven `uneven' 1/`mult'
 	}
 }
-* If uneven() is specified.
+** If specified, perform various checks.
 else {
 	* If the user didn't enter mult(), then replace it with the number of fractions in uneven().
 	if `mult'==0  {
@@ -28,7 +28,7 @@ else {
 	* Check that uneven() has same number of fractions as the number of treatments specified in mult().
 	local uneven_num : word count `uneven'
 	if `uneven_num' != `mult' {
-		display as error "Error: mult() has to be an integer equal to the number of fractions in uneven() (first treatment is control). Otherwise don't use mult()."
+		display as error "mult() has to be an integer equal to the number of fractions in uneven()"
 		exit 121
 	}
 	* Check that values add up to 1.
@@ -37,56 +37,45 @@ else {
 		local uneven_sum = `uneven_sum'+`1'
 		macro shift
 	}
-	if `uneven_sum' < .9999 {
-		display as error "Error: fractions in uneven() must add up to 1."
+	if `uneven_sum' < .99 {
+		display as error "fractions in uneven() must add up to 1"
 		exit 121
 	}
 	* Check range of values.
 	tokenize `uneven'
 	while "`1'" ~= "" {
 		if (`1' <= 0 | `1'>=1) {
-			display as error "Error: values of uneven() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)."
+			display as error "values of uneven() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)"
 			exit 125
 		}
 		macro shift
 	}
 }
-*** sortvar() ***
-* Sorting on sortvar() if specified, issue a warning if not.
-capture sort `sortvar'
-if _rc != 0 {
-	display as text "Warning: initial sortvar() wasn't specified."
-}
+
 *** replace ***
-* If replace option is specified, check if 'treatment' variable exists and then drop it before the show starts.
+** If replace option is specified, check if 'treatment' variable exists and then drop it before the show starts.
 if !missing("`replace'") {
 	capture confirm variable treatment
 	if !_rc {
 		drop treatment
-		display as text "Warning: {bf:treatment} values were replaced."
+		display as text "{bf:treatment} values were replaced"
 	}
 }
 *** misfit() ***
+** If misfits() is specified, check that a valid option was passed.
 if !missing("`misfits'") {
-	* Check that misfits() isn't specified without stratification variables.
-	if missing("`varlist'") {
-	display as error "Error: the misfits() option cannot be specified if no stratification variables are specified."
-	exit 184
-	}
-	else {
-	* If stratification variables are specified, check that a valid option was passed.
-	_assert inlist("`misfits'", "strata", "overall", "ranked", "missing"), rc(7) ///
-	msg("Error: misfits() argument must be either {it:strata}, {it:overall}, {it:ranked} or {it:missing}.")
-	}
+	_assert inlist("`misfits'", "missing", "strata", "wstrata", "global", "wglobal"), rc(7) ///
+	msg("misfits() argument must be either {it:missing}, {it:strata}, {it:wstrata}, {it:global} or {it:wglobal}")
 }
+
 ***********************************
 *** The pre-randomization stuff ***
 ***********************************
 
-* Some tempvars and the interestingvar.
+*** Some tempvars and the interesting-var.
 tempvar randnum rank_treat misfit cellid obs
 
-* Marksample
+*** Marksample
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
@@ -182,7 +171,6 @@ forv i=1/`n' {
 sort `rank' in 1/`n'
 if `N'<`n' qui drop in `=`N'+1'/`n' 
 local list: list retok list
-di `"`list'"'
 local randrandpack = "`list'"
 
 * Method = overall
@@ -208,6 +196,9 @@ end
 /* 
 
 CHANGE LOG
+1.1.0
+	- Error messages more akin to official errors.
+	- Deleted check for varlist with misfits, made no sense (?)
 1.0.5
 	- Much improved help file.
 1.0.4
