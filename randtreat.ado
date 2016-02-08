@@ -1,13 +1,19 @@
-*! 1.1.0 Alvaro Carril 07feb2016
+*! 1.1.0 Alvaro Carril 08feb2016
 program define randtreat
 	version 11
 
 syntax [varlist(default=none)] /// 
-	[, Replace Keepsort SEtseed(integer 1234) Uneven(string) MUlt(integer 0) MIsfits(string)]
+	[, Replace Keepsort SEtseed(string) Uneven(string) MUlt(integer 0) MIsfits(string)]
 
 ********************
 *** Input checks ***
 ********************
+
+*** setseed()
+* If setseed is not used, set the seed as the current state
+if missing("`setseed'") {
+	local setseed `c(seed)'
+	}
 
 *** uneven() ***
 ** If not specified, complete it to be even according to mult() fractions.
@@ -71,6 +77,9 @@ if !missing("`misfits'") {
 ***********************************
 *** The pre-randomization stuff ***
 ***********************************
+
+*** Set the seed
+set seed `setseed'
 
 *** Some tempvars and the interesting-var.
 tempvar randnum rank_treat misfit cellid obs
