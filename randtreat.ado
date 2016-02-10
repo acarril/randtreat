@@ -114,6 +114,10 @@ forvalues i = 2(2)`size' {
 forvalues i = 1/`size' {
 	local denoms `denoms' `den`i''
 }
+* Create local with all treatments
+forvalues i = 1/`mult' {
+	local treatments `treatments' `i'
+}
 * LCM of denominators.
 forvalues x = 2/1000 {
 	local check 0
@@ -186,17 +190,27 @@ if `N'<`n' qui drop in `=`N'+1'/`n'
 local list: list retok list
 local randrandpack = "`list'"
 
-* Method = overall
-if "`misfits'" == "overall" {
+* Method = wglobal
+if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
 		real(word("`randrandpack'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
 }
-* Method = strata
-if "`misfits'" == "strata" {
+* Method = wstrata
+if "`misfits'" == "wstrata" {
 	quietly bys `touse' `varlist' : replace treatment = ///
 		real(word("`randrandpack'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
 }
 
+* Method = global
+if "`misfits'" == "global" {
+	quietly replace treatment = ///
+		real(word("`treatments'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+}
+* Method = strata
+if "`misfits'" == "strata" {
+	quietly bys `touse' `varlist' : replace treatment = ///
+		real(word("`treatments'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+}
 *** End stuff ***
 * Decrease treatment numbers, just so control is 0.
 quietly replace treatment = treatment-1
@@ -215,28 +229,30 @@ end
 
 CHANGE LOG
 1.1.0
-	- Added the keepsort() option
-	- Error messages more akin to official errors.
+	- Implemented unweighted misfits() methods
+	- Implemented keepsort option
+	- Implemented setseed() option
+	- Error messages more akin to official errors
 	- Deleted check for varlist with misfits, made no sense (?)
 	- Implemented setseed option
 1.0.5
-	- Much improved help file.
+	- Much improved help file
 1.0.4
-	- No longer need sortlistby module.
+	- No longer need sortlistby module
 1.0.3
-	- Added misfits() options: overall, strata, missing.
-	- Depends on sortlistby module.
+	- Added misfits() options: overall, strata, missing
+	- Depends on sortlistby module
 1.0.2
 	- Stop the use of egenmore() repeat for the sequence filling (thanks to Nick
 	Cox).
 	- Code for treatment assignment is now case-independent of wether a varlist 
-	is specified or not.
+	is specified or not
 	- Fixed an bug in which the assignment without varlist would not be
-	reproducible, even after setting the seed.
+	reproducible, even after setting the seed
 1.0.1
-	- Minor code improvements. 
+	- Minor code improvements
 1.0.0
-	- First working version.
+	- First working version
 
 TODOS (AND IDEAS TO MAKE RANDTREAT EVEN COOLER)
 - Use gen(varname) instead of hard-wired 'treatment'. Would loose 'replace' though (?)
