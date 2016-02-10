@@ -8,6 +8,10 @@ syntax [varlist(default=none)] ///
 ********************
 *** Input checks ***
 ********************
+if !missing("`keepsort'") {
+	tempvar sortindex
+	gen int `sortindex' = _n
+}
 
 *** setseed()
 * If setseed is not used, set the seed as the current state
@@ -154,7 +158,7 @@ gen double `randnum' = runiform()
 
 *** First-pass randomization***
 
-* Random sory on strata.
+* Random sort on strata.
 sort `touse' `varlist' `randnum', stable
 gen long `obs' = _n
 
@@ -196,8 +200,13 @@ if "`misfits'" == "strata" {
 *** End stuff ***
 * Decrease treatment numbers, just so control is 0.
 quietly replace treatment = treatment-1
-* Nicer sorting (debatable).
+* Final sorting
+if !missing("`keepsort'") {
+	sort `sortindex'
+	}
+else {
 sort `varlist' treatment, stable
+}
 end
 
 ********************************************************************************
@@ -206,6 +215,7 @@ end
 
 CHANGE LOG
 1.1.0
+	- Added the keepsort() option
 	- Error messages more akin to official errors.
 	- Deleted check for varlist with misfits, made no sense (?)
 	- Implemented setseed option
