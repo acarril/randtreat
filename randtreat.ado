@@ -180,8 +180,10 @@ sort `touse' `varlist' `randnum', stable
 quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `varlist' : replace treatment = ///
 	real(word("`randpack'", mod(_n - 1, `randpack_N') + 1)) if _n > 1 & `touse'
-* Mark misfits as missing values
+* Mark misfits as missing values and display that count
 quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`randpack_N')
+quietly count if mi(treatment)
+di as text "assignment produces `r(N)' misfits"
 
 *** Dealing with misfits
 * Method = wglobal
