@@ -1,14 +1,14 @@
-*! 1.1.0 Alvaro Carril 08feb2016
+*! 1.1.0 Alvaro Carril 11feb2016
 program define randtreat
 	version 11
 
 syntax [varlist(default=none)] /// 
-	[, Replace Keepsort SEtseed(string) Uneven(string) MUlt(integer 0) MIsfits(string)]
+	[, Replace SOrtpreserve SEtseed(string) Uneven(string) MUlt(integer 0) MIsfits(string)]
 
 ********************
 *** Input checks ***
 ********************
-if !missing("`keepsort'") {
+if !missing("`sortpreserve'") {
 	tempvar sortindex
 	gen int `sortindex' = _n
 }
@@ -19,8 +19,8 @@ if missing("`setseed'") {
 	local setseed `c(seed)'
 	}
 
-*** uneven() ***
-** If not specified, complete it to be even according to mult() fractions.
+*** uneven()
+** If not specified, complete it to be even according to mult() fractions
 if missing("`uneven'") {
 	if `mult'==0  {
 		local mult = 2
@@ -29,7 +29,7 @@ if missing("`uneven'") {
 		local uneven `uneven' 1/`mult'
 	}
 }
-** If specified, perform various checks.
+** If specified, perform various checks
 else {
 	* If the user didn't enter mult(), then replace it with the number of fractions in uneven().
 	if `mult'==0  {
@@ -62,8 +62,8 @@ else {
 	}
 }
 
-*** replace ***
-** If replace option is specified, check if 'treatment' variable exists and then drop it before the show starts.
+*** replace
+* If replace option is specified, check if 'treatment' variable exists and then drop it before the show starts.
 if !missing("`replace'") {
 	capture confirm variable treatment
 	if !_rc {
@@ -71,8 +71,9 @@ if !missing("`replace'") {
 		display as text "{bf:treatment} values were replaced"
 	}
 }
-*** misfit() ***
-** If misfits() is specified, check that a valid option was passed.
+
+*** misfits()
+* If misfits() is specified, check that a valid option was passed.
 if !missing("`misfits'") {
 	_assert inlist("`misfits'", "missing", "strata", "wstrata", "global", "wglobal"), rc(7) ///
 	msg("misfits() argument must be either {it:missing}, {it:strata}, {it:wstrata}, {it:global} or {it:wglobal}")
@@ -85,7 +86,7 @@ if !missing("`misfits'") {
 *** Set the seed
 set seed `setseed'
 
-*** Some tempvars and the interesting-var.
+*** Some tempvars and the interesting-var
 tempvar randnum rank_treat misfit cellid obs
 
 *** Marksample
@@ -93,7 +94,13 @@ marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
 
-*** Determining minimum "randomization pack" for all treatments.
+*** Create local with all treatments and treatments_N
+forvalues i = 1/`mult' {
+	local treatments `treatments' `i'
+}
+local treatments_N : list sizeof treatments
+
+*** Determining "randomization pack" (randpack) for all treatments.
 * Tokenize uneven() with stub 'u'.
 tokenize `uneven'
 local i = 1 	
@@ -101,7 +108,7 @@ while "``i''" != "" {
 	local u`i' `"``i''"'
 	local i = `i' + 1 
 }
-* Tokenize denominators of uneven() with 'den' stub.
+* Tokenize denominators of uneven() with 'den' stub
 local uneven2 = subinstr("`uneven'", "/", " ", .)
 tokenize `uneven2'
 local size : list sizeof uneven2
@@ -110,16 +117,13 @@ forvalues i = 2(2)`size' {
 	local den`n' `"``i''"'
 	local n = `n' + 1
 }
-* Create local 'denoms' with all denominators.
+local n = `n' - 1
+* Create local 'denoms' with all denominators
 forvalues i = 1/`size' {
 	local denoms `denoms' `den`i''
 }
-* Create local with all treatments
-forvalues i = 1/`mult' {
-	local treatments `treatments' `i'
-}
-* LCM of denominators.
-forvalues x = 2/1000 {
+* LCM of denominators
+forvalues x = 2/10000 {
 	local check 0
 	local size : list sizeof denoms
 	foreach number of local denoms {
@@ -145,82 +149,77 @@ forvalues i = 1/`size' {
 forvalues i = 1/`size' {
 	local randpack2 `randpack2' `aux`i''
 }
+* Generate randpack and randpack_N
 forvalues k = 1/`size' {
 	forvalues i = 1/`aux`k'' {
 		local randpack `randpack' `k'
 	}
 }
-* Create some locals and tempvar for randomization.
+local randpack_N : list sizeof randpack
+
+*** Random shuffle of randpack and treatments
+mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
+mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
+
+*** Create some locals and tempvar for randomization
 local nvals : word count `randpack'
 local first : word 1 of `randpack'
-local randpack_size : list sizeof randpack
+
 gen double `randnum' = runiform()
 
 **************************************
 *** The actual randomization stuff ***
 **************************************
 
-*** First-pass randomization***
-
-* Random sort on strata.
+*** First-pass randomization
+* Random sort on strata
 sort `touse' `varlist' `randnum', stable
 gen long `obs' = _n
-
-* Assign treatments randomly and according to specified proportions in uneven().
+* Assign treatments randomly and according to specified proportions in uneven()
 sort `touse' `varlist' `randnum', stable
-quietly bysort `touse' `varlist' (`obs') : gen treatment = `first' if `touse'
+quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `varlist' : replace treatment = ///
-	real(word("`randpack'", mod(_n - 1, `randpack_size') + 1)) if _n > 1 & `touse' 
-quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`randpack_size')
+	real(word("`randpack'", mod(_n - 1, `randpack_N') + 1)) if _n > 1 & `touse'
+* Mark misfits as missing values
+quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`randpack_N')
 
-*** Dealing with misfits ***
-
-* Generate random randpack, `randrandpack'
-local N=_N
-if `N'<`n' qui set obs `n' 
-tempvar rank By
-qui gen `rank'=_n in 1/`n'
-qui gen double `By'=uniform() in 1/`n'
-sort `By' in 1/`n'
-forv i=1/`n' {
-	local list `"`list'`: word `=`rank'[`i']' of `randpack'' "'
-}
-sort `rank' in 1/`n'
-if `N'<`n' qui drop in `=`N'+1'/`n' 
-local list: list retok list
-local randrandpack = "`list'"
-
+*** Dealing with misfits
 * Method = wglobal
 if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
-		real(word("`randrandpack'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `randpack_N') + 1)) if treatment == .
 }
 * Method = wstrata
 if "`misfits'" == "wstrata" {
 	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`randrandpack'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `randpack_N') + 1)) if treatment == .
 }
-
 * Method = global
 if "`misfits'" == "global" {
 	quietly replace treatment = ///
-		real(word("`treatments'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `treatments_N') + 1)) if treatment == .
 }
 * Method = strata
 if "`misfits'" == "strata" {
 	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`treatments'", mod(_n - 1, `randpack_size') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `treatments_N') + 1)) if treatment == .
 }
-*** End stuff ***
-* Decrease treatment numbers, just so control is 0.
+
+**************************************
+******** Closing the curtains ********
+**************************************
+
+*** Decrease treatment values, just so control is 0.
 quietly replace treatment = treatment-1
-* Final sorting
-if !missing("`keepsort'") {
-	sort `sortindex'
-	}
-else {
-sort `varlist' treatment, stable
+
+*** Final sorting
+if !missing("`sortpreserve'") {
+	sort `sortindex', stable
 }
+else {
+	sort `varlist' treatment, stable
+}
+
 end
 
 ********************************************************************************
@@ -229,12 +228,13 @@ end
 
 CHANGE LOG
 1.1.0
+	- Reimplemented misfits() w-methods
+	- Reimplemented randpack shuffling in Mata
 	- Implemented unweighted misfits() methods
-	- Implemented keepsort option
+	- Implemented sortpreserve option
 	- Implemented setseed() option
 	- Error messages more akin to official errors
 	- Deleted check for varlist with misfits, made no sense (?)
-	- Implemented setseed option
 1.0.5
 	- Much improved help file
 1.0.4
