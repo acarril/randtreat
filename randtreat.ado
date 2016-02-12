@@ -8,6 +8,8 @@ syntax [varlist(default=none)] ///
 ********************
 *** Input checks ***
 ********************
+
+*** sortpreserve
 if !missing("`sortpreserve'") {
 	tempvar sortindex
 	gen int `sortindex' = _n
@@ -31,11 +33,11 @@ if missing("`uneven'") {
 }
 ** If specified, perform various checks
 else {
-	* If the user didn't enter mult(), then replace it with the number of fractions in uneven().
+	* If the user didn't enter mult(), then replace it with the number of fractions in uneven()
 	if `mult'==0  {
 		local mult : list sizeof uneven
 	}
-	* Check that uneven() has same number of fractions as the number of treatments specified in mult().
+	* Check that uneven() has same number of fractions as the number of treatments specified in mult()
 	local uneven_num : word count `uneven'
 	if `uneven_num' != `mult' {
 		display as error "mult() has to be an integer equal to the number of fractions in uneven()"
