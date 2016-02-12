@@ -52,8 +52,10 @@ When the command is run, it will display the number of misfits that the current 
 By specifying {opt mi:sfits(method)}, one can choose how to deal with those misfits.
 
 {pstd}
-One of the first to discuss the 'misfits' issue were Bruhn and McKenzie (2011), in a {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-uneven-numbers-in-some-strata":World Bank Blog post}.
-A generalization of the problem and details Stata implementation can be read in {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}.
+One of the first to discuss the 'misfits' issue were Bruhn and McKenzie (2011),
+in a {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-uneven-numbers-in-some-strata":World Bank Blog post}.
+A generalization of the problem and details of the Stata implementation can be read in 
+{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}.
 
 {dlgtab:Options}
 
@@ -82,7 +84,8 @@ If not specified, it defaults to two (0 and 1), unless the {opt u:neven()} optio
  Only fractions can be specified, so {opt u:neven(.5 .25 .25)}, though equivalent to our example, is not allowed. Each fraction must be belong in (0,1) and their sum must add up exactly to 1.
 
 {phang}
-{opt mi:sfits(method)} specifies which method to use in order to deal with misfits. More details on the internal workings of these methods can be seen on {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":my working paper}.
+{opt mi:sfits(method)} specifies which method to use in order to deal with misfits.
+More details on the internal workings of these methods can be seen on {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":my working paper}.
 The available {it:methods} are:
 
 {phang2}
