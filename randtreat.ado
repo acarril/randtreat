@@ -1,4 +1,4 @@
-*! 1.1.0 Alvaro Carril 31mar2016
+*! 1.1.1 Alvaro Carril 31mar2016
 program define randtreat
 	version 11
 
@@ -156,8 +156,6 @@ local randpack_N : list sizeof randpack
 * Random shuffle of randpack and treatments
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
-
-
 
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
