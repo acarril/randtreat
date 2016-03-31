@@ -1,9 +1,9 @@
-*! 1.1.0 Alvaro Carril 11feb2016
+*! 1.1.0 Alvaro Carril 31mar2016
 program define randtreat
 	version 11
 
 syntax [varlist(default=none)] /// 
-	[, Replace SOrtpreserve SEtseed(string) Uneven(string) MUlt(integer 0) MIsfits(string)]
+	[, Replace SOrtpreserve SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
 
 ********************
 *** Input checks ***
@@ -21,43 +21,43 @@ if missing("`setseed'") {
 	local setseed `c(seed)'
 	}
 
-*** uneven()
+*** unequal()
 ** If not specified, complete it to be even according to mult() fractions
-if missing("`uneven'") {
+if missing("`unequal'") {
 	if `mult'==0  {
 		local mult = 2
 	}
 	forvalues i = 1/`mult' {
-		local uneven `uneven' 1/`mult'
+		local unequal `unequal' 1/`mult'
 	}
 }
 ** If specified, perform various checks
 else {
-	* If the user didn't enter mult(), then replace it with the number of fractions in uneven()
+	* If the user didn't enter mult(), then replace it with the number of fractions in unequal()
 	if `mult'==0  {
-		local mult : list sizeof uneven
+		local mult : list sizeof unequal
 	}
-	* Check that uneven() has same number of fractions as the number of treatments specified in mult()
-	local uneven_num : word count `uneven'
-	if `uneven_num' != `mult' {
-		display as error "mult() has to be an integer equal to the number of fractions in uneven()"
+	* Check that unequal() has same number of fractions as the number of treatments specified in mult()
+	local unequal_num : word count `unequal'
+	if `unequal_num' != `mult' {
+		display as error "mult() has to be an integer equal to the number of fractions in unequal()"
 		exit 121
 	}
 	* Check that values add up to 1.
-	tokenize `uneven'
+	tokenize `unequal'
 	while "`1'" ~= "" {
-		local uneven_sum = `uneven_sum'+`1'
+		local unequal_sum = `unequal_sum'+`1'
 		macro shift
 	}
-	if `uneven_sum' < .99 {
-		display as error "fractions in uneven() must add up to 1"
+	if `unequal_sum' < .99 {
+		display as error "fractions in unequal() must add up to 1"
 		exit 121
 	}
 	* Check range of values.
-	tokenize `uneven'
+	tokenize `unequal'
 	while "`1'" ~= "" {
 		if (`1' <= 0 | `1'>=1) {
-			display as error "values of uneven() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)"
+			display as error "values of unequal() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)"
 			exit 125
 		}
 		macro shift
@@ -103,17 +103,17 @@ forvalues i = 1/`mult' {
 local treatments_N : list sizeof treatments
 
 *** Determining "randomization pack" (randpack) for all treatments.
-* Tokenize uneven() with stub 'u'.
-tokenize `uneven'
+* Tokenize unequal() with stub 'u'.
+tokenize `unequal'
 local i = 1 	
 while "``i''" != "" { 
 	local u`i' `"``i''"'
 	local i = `i' + 1 
 }
-* Tokenize denominators of uneven() with 'den' stub
-local uneven2 = subinstr("`uneven'", "/", " ", .)
-tokenize `uneven2'
-local size : list sizeof uneven2
+* Tokenize denominators of unequal() with 'den' stub
+local unequal2 = subinstr("`unequal'", "/", " ", .)
+tokenize `unequal2'
+local size : list sizeof unequal2
 local n = 1
 forvalues i = 2(2)`size' {
 	local den`n' `"``i''"'
@@ -139,7 +139,7 @@ forvalues x = 2/10000 {
 	}
 }
 * Auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack.
-local size : list sizeof uneven
+local size : list sizeof unequal
 forvalues i = 1/`size' {
 	local randpack1 `randpack1' `lcm'*`u`i''
 }
@@ -177,7 +177,7 @@ gen double `randnum' = runiform()
 * Random sort on strata
 sort `touse' `varlist' `randnum', stable
 gen long `obs' = _n
-* Assign treatments randomly and according to specified proportions in uneven()
+* Assign treatments randomly and according to specified proportions in unequal()
 sort `touse' `varlist' `randnum', stable
 quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `varlist' : replace treatment = ///
