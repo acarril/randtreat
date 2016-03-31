@@ -5,45 +5,44 @@ program define randtreat
 syntax [varlist(default=none)] /// 
 	[, Replace SOrtpreserve SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
 
-********************
-*** Input checks ***
-********************
+*-------------------------------------------------------------------------------
+* Input checks
+*-------------------------------------------------------------------------------
 
-*** sortpreserve
+* sortpreserve
 if !missing("`sortpreserve'") {
 	tempvar sortindex
-	gen int `sortindex' = _n
+	gen int `sortindex' = _n //If sortpreserve is not used, generate index var
 }
 
-*** setseed()
-* If setseed is not used, set the seed as the current state
+* setseed()
 if missing("`setseed'") {
-	local setseed `c(seed)'
+	local setseed `c(seed)' //If setseed is not used, set seed to current state
 	}
 
-*** unequal()
-** If not specified, complete it to be even according to mult() fractions
+* unequal()
+// If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
-	if `mult'==0  {
+	if `mult'==0 {
 		local mult = 2
 	}
 	forvalues i = 1/`mult' {
 		local unequal `unequal' 1/`mult'
 	}
 }
-** If specified, perform various checks
+// If unequal() is specified, perform various checks
 else {
-	* If the user didn't enter mult(), then replace it with the number of fractions in unequal()
+	// If mult() is empty, replace it with the number of fractions in unequal()
 	if `mult'==0  {
 		local mult : list sizeof unequal
 	}
-	* Check that unequal() has same number of fractions as the number of treatments specified in mult()
+	// Check that unequal() has same number of fractions as the number of treatments specified in mult()
 	local unequal_num : word count `unequal'
 	if `unequal_num' != `mult' {
 		display as error "mult() has to be an integer equal to the number of fractions in unequal()"
 		exit 121
 	}
-	* Check that values add up to 1.
+	// Check that values add up to 1 --> can the check be improved?
 	tokenize `unequal'
 	while "`1'" ~= "" {
 		local unequal_sum = `unequal_sum'+`1'
@@ -53,7 +52,7 @@ else {
 		display as error "fractions in unequal() must add up to 1"
 		exit 121
 	}
-	* Check range of values.
+	// Check range of fractions
 	tokenize `unequal'
 	while "`1'" ~= "" {
 		if (`1' <= 0 | `1'>=1) {
@@ -64,8 +63,8 @@ else {
 	}
 }
 
-*** replace
-* If replace option is specified, check if 'treatment' variable exists and then drop it before the show starts.
+* replace
+// If specified, check if 'treatment' variable exists and drop it before the show starts
 if !missing("`replace'") {
 	capture confirm variable treatment
 	if !_rc {
@@ -74,43 +73,40 @@ if !missing("`replace'") {
 	}
 }
 
-*** misfits()
-* If misfits() is specified, check that a valid option was passed.
+* misfits()
+// If specified, check that a valid option was passed
 if !missing("`misfits'") {
 	_assert inlist("`misfits'", "missing", "strata", "wstrata", "global", "wglobal"), rc(7) ///
 	msg("misfits() argument must be either {it:missing}, {it:strata}, {it:wstrata}, {it:global} or {it:wglobal}")
 }
 
-***********************************
-*** The pre-randomization stuff ***
-***********************************
+*-------------------------------------------------------------------------------
+* Pre-randomization stuff
+*-------------------------------------------------------------------------------
 
-*** Set the seed
-set seed `setseed'
-
-*** Some tempvars and the interesting-var
+* Initial setup
 tempvar randnum rank_treat misfit cellid obs
-
-*** Marksample
+set seed `setseed'
+// Mark sample
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
 
-*** Create local with all treatments and treatments_N
+* Create local with all treatments and treatments_N
 forvalues i = 1/`mult' {
 	local treatments `treatments' `i'
 }
 local treatments_N : list sizeof treatments
 
-*** Determining "randomization pack" (randpack) for all treatments.
-* Tokenize unequal() with stub 'u'.
+* Construct randpack for all treatments
+// Tokenize unequal() with stub 'u'.
 tokenize `unequal'
 local i = 1 	
 while "``i''" != "" { 
 	local u`i' `"``i''"'
 	local i = `i' + 1 
 }
-* Tokenize denominators of unequal() with 'den' stub
+// Tokenize denominators of unequal() with 'den' stub
 local unequal2 = subinstr("`unequal'", "/", " ", .)
 tokenize `unequal2'
 local size : list sizeof unequal2
@@ -120,11 +116,11 @@ forvalues i = 2(2)`size' {
 	local n = `n' + 1
 }
 local n = `n' - 1
-* Create local 'denoms' with all denominators
+// Create local 'denoms' with all denominators
 forvalues i = 1/`size' {
 	local denoms `denoms' `den`i''
 }
-* LCM of denominators
+// LCM of denominators
 forvalues x = 2/10000 {
 	local check 0
 	local size : list sizeof denoms
@@ -138,12 +134,12 @@ forvalues x = 2/10000 {
 		continue, break
 	}
 }
-* Auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack.
+// Auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack.
 local size : list sizeof unequal
 forvalues i = 1/`size' {
 	local randpack1 `randpack1' `lcm'*`u`i''
 }
-* Tokenize randpack1 with 'aux' stub (the three loops may be inefficient).
+// Tokenize randpack1 with 'aux' stub (the three loops may be inefficient).
 tokenize `randpack1'
 forvalues i = 1/`size' {
 	local aux`i' = ``i''
