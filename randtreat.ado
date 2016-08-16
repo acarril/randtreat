@@ -11,12 +11,12 @@ syntax [varlist(default=none)] ///
 * sortpreserve
 if !missing("`sortpreserve'") {
 	tempvar sortindex
-	gen int `sortindex' = _n //If sortpreserve is not used, generate index var
+	gen int `sortindex' = _n // If sortpreserve is not used, generate index var
 }
 
 * setseed()
 if missing("`setseed'") {
-	local setseed `c(seed)' //If setseed is not used, set seed to current state
+	local setseed `c(seed)' // If setseed is not used, set seed to current state
 	}
 
 * unequal()
