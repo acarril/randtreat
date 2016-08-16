@@ -96,30 +96,45 @@ forvalues i = 1/`mult' {
 local treatments_N : list sizeof treatments
 
 * Construct randpack for all treatments
-// 
+*-------------------------------------------------------------------------------
 
-// Tokenize unequal() with stub 'u'.
+// Create `unequal2' with spaces instead of slashes
+local unequal2 = subinstr("`unequal'", "/", " ", .)
+
+// Simplify fractions
+foreach f of numlist 1/`treatments_N' {
+	local a : word `=2*`f'-1' of `unequal2'
+	local b : word `=2*`f'' of `unequal2'
+	gcd `a' `b'
+	local a = `a'/`r(gcd)'
+	local b = `b'/`r(gcd)'
+	local unequal_reduc `unequal_reduc' `a' `b'
+}
+
+// Tokenize unequal() fractions with 'u' stub
 tokenize `unequal'
-local i = 1 	
+local i = 1
 while "``i''" != "" { 
 	local u`i' `"``i''"'
-	local i = `i' + 1 
+	local i = `i' + 1
 }
+
 // Tokenize denominators of unequal() with 'den' stub
-local unequal2 = subinstr("`unequal'", "/", " ", .)
-tokenize `unequal2'
 local size : list sizeof unequal2
+tokenize `unequal2'
 local n = 1
 forvalues i = 2(2)`size' {
 	local den`n' `"``i''"'
 	local n = `n' + 1
 }
 local n = `n' - 1
+
 // Create local 'denoms' with all denominators
 forvalues i = 1/`size' {
 	local denoms `denoms' `den`i''
 }
 di "denoms: `denoms'"
+
 // LCM of denominators
 forvalues x = 2/100000 {
 	local check 0
@@ -224,6 +239,7 @@ if !missing("`sortpreserve'") {
 else {
 	sort `varlist' treatment, stable
 }
+*/
 end
 
 ******
@@ -240,6 +256,14 @@ program define gcd, rclass
         }
         return scalar gcd = `1'
     }
+end
+
+program define gcdm, rclass
+    clear results
+    foreach i of local 0 {
+        gcd `i' `r(gcd)'
+    }
+    return scalar lcm = r(lcm)
 end
 
 program define lcm, rclass
