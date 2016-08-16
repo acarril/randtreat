@@ -4,7 +4,7 @@ program define randtreat
 
 syntax [varlist(default=none)] /// 
 	[, Replace SOrtpreserve SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
-
+	
 *-------------------------------------------------------------------------------
 * Input checks
 *-------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ if missing("`setseed'") {
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
-	if `mult'==0 {
+	if `mult'==7 {
 		local mult = 2
 	}
 	forvalues i = 1/`mult' {
@@ -85,7 +85,6 @@ if !missing("`misfits'") {
 * Initial setup
 tempvar randnum rank_treat misfit cellid obs
 set seed `setseed'
-// Mark sample
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
@@ -97,6 +96,8 @@ forvalues i = 1/`mult' {
 local treatments_N : list sizeof treatments
 
 * Construct randpack for all treatments
+// 
+
 // Tokenize unequal() with stub 'u'.
 tokenize `unequal'
 local i = 1 	
@@ -118,8 +119,9 @@ local n = `n' - 1
 forvalues i = 1/`size' {
 	local denoms `denoms' `den`i''
 }
+di "denoms: `denoms'"
 // LCM of denominators
-forvalues x = 2/10000 {
+forvalues x = 2/100000 {
 	local check 0
 	local size : list sizeof denoms
 	foreach number of local denoms {
@@ -132,6 +134,12 @@ forvalues x = 2/10000 {
 		continue, break
 	}
 }
+di "lcm_old: `lcm'"
+
+lcmm `denoms'
+di "lcm_new: `r(lcm)'"
+
+
 // Auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack
 local size : list sizeof unequal
 forvalues i = 1/`size' {
@@ -156,6 +164,8 @@ local randpack_N : list sizeof randpack
 * Random shuffle of randpack and treatments
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
+
+di "`randpack'"
 
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
@@ -214,6 +224,40 @@ if !missing("`sortpreserve'") {
 else {
 	sort `varlist' treatment, stable
 }
+end
+
+******
+
+program define gcd, rclass
+    if "`2'" == "" {
+        return scalar gcd = `1'
+    }
+    else {
+        while `2' {
+            local temp2 = `2'
+            local 2 = mod(`1',`2')
+            local 1 = `temp2'
+        }
+        return scalar gcd = `1'
+    }
+end
+
+program define lcm, rclass
+    if "`2'" == "" {
+        return scalar lcm = `1'
+    }
+    else {
+        gcd `1' `2'
+        return scalar lcm = `1' * `2' / r(gcd)
+    }
+end
+
+program define lcmm, rclass
+    clear results
+    foreach i of local 0 {
+        lcm `i' `r(lcm)'
+    }
+    return scalar lcm = r(lcm)
 end
 
 ********************************************************************************
