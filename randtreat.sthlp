@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.1.1 March 2016}{...}
+{* *! version 1.2 August 2016}{...}
 {cmd:help randtreat}{...}
 {hline}
 

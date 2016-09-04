@@ -1,4 +1,4 @@
-*! 1.1.1 Alvaro Carril 31mar2016
+*! 1.2 Alvaro Carril aug2016
 program define randtreat
 	version 11
 
@@ -11,12 +11,12 @@ syntax [varlist(default=none)] ///
 * sortpreserve
 if !missing("`sortpreserve'") {
 	tempvar sortindex
-	gen int `sortindex' = _n //If sortpreserve is not used, generate index var
+	gen int `sortindex' = _n // If sortpreserve is not used, generate index var
 }
 
 * setseed()
 if missing("`setseed'") {
-	local setseed `c(seed)' //If setseed is not used, set seed to current state
+	local setseed `c(seed)' // If setseed is not used, set seed to current state
 	}
 
 * unequal()
@@ -43,17 +43,17 @@ else {
 	}
 	// Check that values add up to 1 --> can the check be improved?
 	tokenize `unequal'
-	while "`1'" ~= "" {
+	while "`1'" != "" {
 		local unequal_sum = `unequal_sum'+`1'
 		macro shift
 	}
-	if `unequal_sum' < .99 {
+	if `unequal_sum' < .9999 {
 		display as error "fractions in unequal() must add up to 1"
 		exit 121
 	}
 	// Check range of fractions
 	tokenize `unequal'
-	while "`1'" ~= "" {
+	while "`1'" != "" {
 		if (`1' <= 0 | `1'>=1) {
 			display as error "values of unequal() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)"
 			exit 125
@@ -82,86 +82,93 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 * Pre-randomization stuff
 *-------------------------------------------------------------------------------
-* Initial setup
+
+// Initial setup
 tempvar randnum rank_treat misfit cellid obs
 set seed `setseed'
-// Mark sample
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
 
-* Create local with all treatments and treatments_N
+// local with all treatments (B vector)
 forvalues i = 1/`mult' {
 	local treatments `treatments' `i'
 }
-local treatments_N : list sizeof treatments
 
-* Construct randpack for all treatments
-// Tokenize unequal() with stub 'u'.
+// local with number of treatments (T)
+local T = `mult'
+
+* Construct randpack
+*-------------------------------------------------------------------------------
+
+// local `unequal2' with spaces instead of slashes
+local unequal2 = subinstr("`unequal'", "/", " ", .)
+
+// simplify fractions
+foreach f of numlist 1/`T' {
+	local a : word `=2*`f'-1' of `unequal2'
+	local b : word `=2*`f'' of `unequal2'
+	gcd `a' `b'
+	local a = `a'/`r(gcd)'
+	local b = `b'/`r(gcd)'
+	local unequal_reduc `unequal_reduc' `a' `b'
+}
+
+// tokenize unequal() fractions with 'u' stub
 tokenize `unequal'
-local i = 1 	
+local i = 1
 while "``i''" != "" { 
 	local u`i' `"``i''"'
-	local i = `i' + 1 
+	local i = `i' + 1
 }
-// Tokenize denominators of unequal() with 'den' stub
-local unequal2 = subinstr("`unequal'", "/", " ", .)
-tokenize `unequal2'
-local size : list sizeof unequal2
+
+// tokenize denominators of unequal() with 'den' stub
+tokenize `unequal_reduc'
 local n = 1
-forvalues i = 2(2)`size' {
+forvalues i = 2(2)`=`T'*2' {
 	local den`n' `"``i''"'
 	local n = `n' + 1
 }
 local n = `n' - 1
-// Create local 'denoms' with all denominators
-forvalues i = 1/`size' {
+
+// local 'denoms' with all denominators
+forvalues i = 1/`T' {
 	local denoms `denoms' `den`i''
 }
-// LCM of denominators
-forvalues x = 2/10000 {
-	local check 0
-	local size : list sizeof denoms
-	foreach number of local denoms {
-		if mod(`x', `number') == 0 {
-			local check = `check' + 1
-		}
-	}
-	if `check' == `size' {
-		local lcm = `x'
-		continue, break
-	}
-}
-// Auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack
-local size : list sizeof unequal
-forvalues i = 1/`size' {
+
+// compute least common multiple of all denominators (J)
+lcmm `denoms'
+local lcm = `r(lcm)'
+
+// auxiliary macro randpack1 with the number of times each treatment should be repeated in the randpack
+forvalues i = 1/`T' {
 	local randpack1 `randpack1' `lcm'*`u`i''
 }
-// Tokenize randpack1 with 'aux' stub --> three loops may be inefficient
+// tokenize randpack1 with 'aux' stub --> three loops may be inefficient
 tokenize `randpack1'
-forvalues i = 1/`size' {
+forvalues i = 1/`T' {
 	local aux`i' = ``i''
 }
-forvalues i = 1/`size' {
+forvalues i = 1/`T' {
 	local randpack2 `randpack2' `aux`i''
 }
-// Generate randpack and randpack_N
-forvalues k = 1/`size' {
+// generate randpack
+forvalues k = 1/`T' {
 	forvalues i = 1/`aux`k'' {
 		local randpack `randpack' `k'
 	}
 }
-local randpack_N : list sizeof randpack
+local J `lcm' // size of randpack
 
-* Random shuffle of randpack and treatments
+* random shuffle of randpack and treatments
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
 *-------------------------------------------------------------------------------
+
 * Create some locals and tempvar for randomization
-local nvals : word count `randpack'
 local first : word 1 of `randpack'
 gen double `randnum' = runiform()
 
@@ -173,32 +180,33 @@ gen long `obs' = _n
 sort `touse' `varlist' `randnum', stable
 quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `varlist' : replace treatment = ///
-	real(word("`randpack'", mod(_n - 1, `randpack_N') + 1)) if _n > 1 & `touse'
+	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
 // Mark misfits as missing values and display that count
-quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`randpack_N')
+quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`J')
 quietly count if mi(treatment)
 di as text "assignment produces `r(N)' misfits"
 
-* Misfit methods
+* Dealing with misfits
+*-------------------------------------------------------------------------------
 // wglobal
 if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `randpack_N') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
 }
 // wstrata
 if "`misfits'" == "wstrata" {
 	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `randpack_N') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
 }
 // global
 if "`misfits'" == "global" {
 	quietly replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `treatments_N') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
 }
 // strata
 if "`misfits'" == "strata" {
 	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `treatments_N') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
 }
 
 *-------------------------------------------------------------------------------
@@ -214,12 +222,55 @@ if !missing("`sortpreserve'") {
 else {
 	sort `varlist' treatment, stable
 }
+*/
+end
+
+*-------------------------------------------------------------------------------
+* Define auxiliary programs
+*-------------------------------------------------------------------------------
+
+* Greatest Common Denominator (GCD) of 2 integers
+program define gcd, rclass
+    if "`2'" == "" {
+        return scalar gcd = `1'
+    }
+    else {
+        while `2' {
+            local temp2 = `2'
+            local 2 = mod(`1',`2')
+            local 1 = `temp2'
+        }
+        return scalar gcd = `1'
+    }
+end
+
+* Least Common Multiple (LCM) of 2 integers
+program define lcm, rclass
+    if "`2'" == "" {
+        return scalar lcm = `1'
+    }
+    else {
+        gcd `1' `2'
+        return scalar lcm = `1' * `2' / r(gcd)
+    }
+end
+
+* LCM of arbitrarily long list of integers
+program define lcmm, rclass
+    clear results
+    foreach i of local 0 {
+        lcm `i' `r(lcm)'
+    }
+    return scalar lcm = r(lcm)
 end
 
 ********************************************************************************
 
 /* 
 CHANGE LOG
+1.2
+	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
+	- Simplified fractions in unequal()
 1.1.1
 	- Changed all instances of uneven to unequal, to match paper
 	- Minor improvemnts in input checks
