@@ -5,6 +5,8 @@ program define randtreat
 syntax [varlist(default=none)] /// 
 	[, Replace SOrtpreserve SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
 
+* un comentario	
+	
 *-------------------------------------------------------------------------------
 * Input checks
 *-------------------------------------------------------------------------------
