@@ -234,7 +234,7 @@ if !missing("`sortpreserve'") {
 else {
 	sort `varlist' treatment, stable
 }
-*/
+
 end
 
 *-------------------------------------------------------------------------------
@@ -280,6 +280,8 @@ end
 
 /* 
 CHANGE LOG
+1.3
+	- Reshuffle randpack for each stratum (thanks to Matt Lowe)
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
