@@ -84,7 +84,7 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 
 // Initial setup
-tempvar randnum rank_treat misfit cellid obs
+tempvar randnum rank_treat misfit cellid obs strata_index
 set seed `setseed'
 marksample touse, novarlist
 quietly count if `touse'
@@ -164,6 +164,11 @@ local J `lcm' // size of randpack
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 
+* generate strata index and N of strata
+egen `strata_index' = group(`varlist')
+qui tab `strata_index'
+local Nstrata = r(r)
+
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
 *-------------------------------------------------------------------------------
@@ -188,6 +193,7 @@ di as text "assignment produces `r(N)' misfits"
 
 * Dealing with misfits
 *-------------------------------------------------------------------------------
+
 // wglobal
 if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
@@ -195,8 +201,11 @@ if "`misfits'" == "wglobal" {
 }
 // wstrata
 if "`misfits'" == "wstrata" {
-	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
+	forvalues s = 1/`Nstrata' {
+		mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
+		replace treatment = real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) ///
+			if treatment == . & `strata_index' == `s'
+	}
 }
 // global
 if "`misfits'" == "global" {
@@ -205,8 +214,11 @@ if "`misfits'" == "global" {
 }
 // strata
 if "`misfits'" == "strata" {
-	quietly bys `touse' `varlist' : replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
+	forvalues s = 1/`Nstrata' {
+		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
+		replace treatment = real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) ///
+			if treatment == . & `strata_index' == `s'
+	}
 }
 
 *-------------------------------------------------------------------------------
