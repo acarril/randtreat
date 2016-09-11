@@ -1,4 +1,4 @@
-*! 1.2 Alvaro Carril aug2016
+*! 1.3 Alvaro Carril sep2016
 program define randtreat
 	version 11
 
