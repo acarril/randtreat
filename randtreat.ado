@@ -2,12 +2,12 @@
 program define randtreat, sortpreserve
 	version 11
 
-syntax [ ,	STrata(varlist numeric) ///
-			MUltiple(integer -1) ///
-			Unequal(string) ///
-			MIsfits(string) ///
-			SEtseed(integer -1) ///
-			Replace ]
+syntax [if] [in] [ , STrata(varlist numeric) ///
+	MUltiple(integer -1) ///
+	Unequal(string) ///
+	MIsfits(string) ///
+	SEtseed(integer -1) ///
+	Replace ]
 
 *-------------------------------------------------------------------------------
 * Input checks
@@ -185,7 +185,7 @@ quietly by `touse' `stratvars' : replace treatment = ///
 	
 // Mark misfits as missing values and display that count
 quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
-quietly count if mi(treatment)
+quietly count if mi(treatment) & `touse'
 di as text "assignment produces `r(N)' misfits"
 
 * Dealing with misfits
@@ -193,22 +193,22 @@ di as text "assignment produces `r(N)' misfits"
 // wglobal
 if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
 }
 // wstrata
 if "`misfits'" == "wstrata" {
 	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
 }
 // global
 if "`misfits'" == "global" {
 	quietly replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
 }
 // strata
 if "`misfits'" == "strata" {
 	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
 }
 
 *-------------------------------------------------------------------------------
@@ -270,6 +270,7 @@ CHANGE LOG
 	- Implement stratification varlist as strata() option with `stratvars' local
 	- Rename mult() option to multiple() for consistency and improve efficiency
 	of checks related to the option
+	- Allow "if" and "in" in syntax
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
