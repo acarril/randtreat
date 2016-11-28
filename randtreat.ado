@@ -2,16 +2,19 @@
 program define randtreat, sortpreserve
 	version 11
 
-syntax [ ,	strata(varlist numeric) ///
+syntax [ ,	STrata(varlist numeric) ///
 			MUlt(integer 2) ///
 			Unequal(string) ///
 			MIsfits(string) ///
-			SEtseed(integer -1 ///
+			SEtseed(integer -1) ///
 			Replace ]
 
 *-------------------------------------------------------------------------------
 * Input checks
 *-------------------------------------------------------------------------------
+
+* stratvars()
+local stratvars `strata'
 
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
@@ -169,16 +172,16 @@ gen double `randnum' = runiform()
 
 * First-pass randomization
 // Random sort on strata
-sort `touse' `varlist' `randnum', stable
+sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
 // Assign treatments randomly and according to specified proportions in unequal()
-sort `touse' `varlist' `randnum', stable
-quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
-quietly by `touse' `varlist' : replace treatment = ///
+sort `touse' `stratvars' `randnum', stable
+quietly bysort `touse' `stratvars' (`_n') : gen treatment = `first' if `touse'
+quietly by `touse' `stratvars' : replace treatment = ///
 	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
 	
 // Mark misfits as missing values and display that count
-quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`J')
+quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
 quietly count if mi(treatment)
 di as text "assignment produces `r(N)' misfits"
 
@@ -191,7 +194,7 @@ if "`misfits'" == "wglobal" {
 }
 // wstrata
 if "`misfits'" == "wstrata" {
-	quietly bys `touse' `varlist' : replace treatment = ///
+	quietly bys `touse' `stratvars' : replace treatment = ///
 		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if treatment == .
 }
 // global
@@ -201,7 +204,7 @@ if "`misfits'" == "global" {
 }
 // strata
 if "`misfits'" == "strata" {
-	quietly bys `touse' `varlist' : replace treatment = ///
+	quietly bys `touse' `stratvars' : replace treatment = ///
 		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if treatment == .
 }
 
