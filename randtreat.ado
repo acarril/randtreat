@@ -3,7 +3,7 @@ program define randtreat, sortpreserve
 	version 11
 
 syntax [ ,	STrata(varlist numeric) ///
-			MUlt(integer 2) ///
+			MUltiple(integer -1) ///
 			Unequal(string) ///
 			MIsfits(string) ///
 			SEtseed(integer -1) ///
@@ -19,27 +19,28 @@ local stratvars `strata'
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
-	forvalues i = 1/`mult' {
-		local unequal `unequal' 1/`mult'
+	forvalues i = 1/`multiple' {
+		local unequal `unequal' 1/`multiple'
 	}
 }
 // If unequal() is specified, perform various checks
 else {
 	// If mult() is empty, replace it with the number of fractions in unequal()
-	if missing("`mult'")  {
-		local mult : list sizeof unequal
+	if `multiple'==-1  {
+		local multiple : list sizeof unequal
 	}
 	// Check that unequal() has same number of fractions as the number of treatments specified in mult()
-	local unequal_num : word count `unequal'
-	if `unequal_num' != `mult' {
-		display as error "mult() has to match the number of fractions in unequal()"
-		exit 121
+	else {
+		if `: word count `unequal'' != `multiple' {
+			display as error "mult() has to match the number of fractions in unequal()"
+			exit 121
+		}
 	}
 	// Check range of fractions
 	tokenize `unequal'
 	while "`1'" != "" {
 		if (`1' <= 0 | `1'>=1) {
-			display as error "unequal() must contain fractions each between 0 and 1 (e.g. 1/2 1/3 1/6)"
+			display as error "unequal() must contain a list of fractions each between 0 and 1"
 			exit 125
 		}
 		macro shift
@@ -74,12 +75,12 @@ if r(N) == 0 error 2000
 if `setseed' != -1 set seed `setseed'
 
 // local with all treatments (B vector)
-forvalues i = 1/`mult' {
+forvalues i = 1/`multiple' {
 	local treatments `treatments' `i'
 }
 
 // local with number of treatments (T)
-local T = `mult'
+local T = `multiple'
 
 * Construct randpack
 *-------------------------------------------------------------------------------
