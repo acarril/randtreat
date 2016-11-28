@@ -1,4 +1,4 @@
-*! 1.3 Alvaro Carril nov2016
+*! 1.3 Alvaro Carril 28nov2016
 program define randtreat, sortpreserve
 	version 11
 
@@ -263,11 +263,13 @@ end
 CHANGE LOG
 1.3
 	- sortpreserve as default program option
-	- improve unequal() fractions sum check to be more precise and account for
+	- Improve unequal() fractions sum check to be more precise and account for
 	sums greater than 1
-	- improvements in setseed option: accept only integers and only set seed if
+	- Improvements in setseed option: accept only integers and only set seed if
 	option is specified
-	- implement stratification varlist as strata() option with `stratvars' local
+	- Implement stratification varlist as strata() option with `stratvars' local
+	- Rename mult() option to multiple() for consistency and improve efficiency
+	of checks related to the option
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
