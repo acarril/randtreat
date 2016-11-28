@@ -3,7 +3,7 @@ program define randtreat, sortpreserve
 	version 11
 
 syntax [varlist(default=none)] /// 
-	[, Replace SOrtpreserve SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
+	[, Replace SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
 	
 *-------------------------------------------------------------------------------
 * Input checks
@@ -33,24 +33,14 @@ else {
 	// Check that unequal() has same number of fractions as the number of treatments specified in mult()
 	local unequal_num : word count `unequal'
 	if `unequal_num' != `mult' {
-		display as error "mult() has to be an integer equal to the number of fractions in unequal()"
-		exit 121
-	}
-	// Check that values add up to 1 --> can the check be improved?
-	tokenize `unequal'
-	while "`1'" != "" {
-		local unequal_sum = `unequal_sum'+`1'
-		macro shift
-	}
-	if `unequal_sum' < .9999 {
-		display as error "fractions in unequal() must add up to 1"
+		display as error "mult() has to match the number of fractions in unequal()"
 		exit 121
 	}
 	// Check range of fractions
 	tokenize `unequal'
 	while "`1'" != "" {
 		if (`1' <= 0 | `1'>=1) {
-			display as error "values of unequal() must be fractions between 0 and 1 (e.g. 1/2 1/3 1/6)"
+			display as error "unequal() must contain fractions each between 0 and 1 (e.g. 1/2 1/3 1/6)"
 			exit 125
 		}
 		macro shift
@@ -61,10 +51,7 @@ else {
 // If specified, check if 'treatment' variable exists and drop it before the show starts
 if !missing("`replace'") {
 	capture confirm variable treatment
-	if !_rc {
-		drop treatment
-		display as text "{bf:treatment} values were replaced"
-	}
+	if !_rc drop treatment
 }
 
 * misfits()
@@ -159,6 +146,19 @@ local J `lcm' // size of randpack
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 
+* Check sum of fractions
+*-------------------------------------------------------------------------------
+tokenize `unequal'
+while "`1'" != "" {
+	local unequal_sum = `unequal_sum'+`1'*`lcm'
+	macro shift
+}
+local unequal_sum = `unequal_sum'/`lcm'
+if `unequal_sum' != 1 {
+	display as error "fractions in unequal() must add up to 1"
+	exit 121
+}
+
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
 *-------------------------------------------------------------------------------
@@ -176,6 +176,7 @@ sort `touse' `varlist' `randnum', stable
 quietly bysort `touse' `varlist' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `varlist' : replace treatment = ///
 	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
+	
 // Mark misfits as missing values and display that count
 quietly by `touse' `varlist' : replace treatment = . if _n > _N - mod(_N,`J')
 quietly count if mi(treatment)
@@ -210,14 +211,6 @@ if "`misfits'" == "strata" {
 * Decrease treatment values, just so control is 0.
 quietly replace treatment = treatment-1
 
-* Final sorting
-if !missing("`sortpreserve'") {
-	sort `sortindex', stable
-}
-else {
-	sort `varlist' treatment, stable
-}
-*/
 end
 
 *-------------------------------------------------------------------------------
@@ -263,9 +256,10 @@ end
 
 /* 
 CHANGE LOG
-1.4
+1.3
 	- sortpreserve as default program option
-	-
+	- improve unequal() fractions sum check to be more precise and account for
+	sums greater than 1
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
