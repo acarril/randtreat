@@ -3,7 +3,7 @@ program define randtreat, sortpreserve
 	version 11
 
 syntax [varlist(default=none)] /// 
-	[, Replace SEtseed(string) Unequal(string) MUlt(integer 0) MIsfits(string)]
+	[, Replace SEtseed(integer -1) Unequal(string) MUlt(integer 0) MIsfits(string)]
 	
 *-------------------------------------------------------------------------------
 * Input checks
@@ -67,7 +67,7 @@ quietly count if `touse'
 if r(N) == 0 error 2000
 
 // Set seed
-if !missing("`setseed'") set seed `setseed'
+if `setseed' != -1 set seed `setseed'
 
 // local with all treatments (B vector)
 forvalues i = 1/`mult' {
