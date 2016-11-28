@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 *! 1.3 Alvaro Carril 28nov2016
 program define randtreat, sortpreserve
-=======
-*! 1.3 Alvaro Carril sep2016
-program define randtreat
->>>>>>> origin/master
 	version 11
 
 syntax [if] [in] [ , STrata(varlist numeric) ///
@@ -71,12 +66,7 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 
 // Initial setup
-<<<<<<< HEAD
 tempvar randnum rank_treat misfit cellid obs
-=======
-tempvar randnum rank_treat misfit cellid obs strata_index
-set seed `setseed'
->>>>>>> origin/master
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
@@ -160,7 +150,6 @@ local J `lcm' // size of randpack
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 
-<<<<<<< HEAD
 * Check sum of fractions
 *-------------------------------------------------------------------------------
 tokenize `unequal'
@@ -173,12 +162,6 @@ if `unequal_sum' != 1 {
 	display as error "fractions in unequal() must add up to 1"
 	exit 121
 }
-=======
-* generate strata index and N of strata
-egen `strata_index' = group(`varlist')
-qui tab `strata_index'
-local Nstrata = r(r)
->>>>>>> origin/master
 
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
@@ -207,7 +190,6 @@ di as text "assignment produces `r(N)' misfits"
 
 * Dealing with misfits
 *-------------------------------------------------------------------------------
-
 // wglobal
 if "`misfits'" == "wglobal" {
 	quietly replace treatment = ///
@@ -215,16 +197,8 @@ if "`misfits'" == "wglobal" {
 }
 // wstrata
 if "`misfits'" == "wstrata" {
-<<<<<<< HEAD
 	quietly bys `touse' `stratvars' : replace treatment = ///
 		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
-=======
-	forvalues s = 1/`Nstrata' {
-		mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
-		replace treatment = real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) ///
-			if treatment == . & `strata_index' == `s'
-	}
->>>>>>> origin/master
 }
 // global
 if "`misfits'" == "global" {
@@ -233,34 +207,15 @@ if "`misfits'" == "global" {
 }
 // strata
 if "`misfits'" == "strata" {
-<<<<<<< HEAD
 	quietly bys `touse' `stratvars' : replace treatment = ///
 		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
-=======
-	forvalues s = 1/`Nstrata' {
-		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
-		replace treatment = real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) ///
-			if treatment == . & `strata_index' == `s'
-	}
->>>>>>> origin/master
 }
 
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
 
-<<<<<<< HEAD
 quietly replace treatment = treatment-1
-=======
-* Final sorting
-if !missing("`sortpreserve'") {
-	sort `sortindex', stable
-}
-else {
-	sort `varlist' treatment, stable
-}
-
->>>>>>> origin/master
 end
 
 *-------------------------------------------------------------------------------
@@ -307,7 +262,6 @@ end
 /* 
 CHANGE LOG
 1.3
-<<<<<<< HEAD
 	- sortpreserve as default program option
 	- Improve unequal() fractions sum check to be more precise and account for
 	sums greater than 1
@@ -317,9 +271,6 @@ CHANGE LOG
 	- Rename mult() option to multiple() for consistency and improve efficiency
 	of checks related to the option
 	- Allow "if" and "in" in syntax
-=======
-	- Reshuffle randpack for each stratum (thanks to Matt Lowe)
->>>>>>> origin/master
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
