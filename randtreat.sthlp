@@ -1,92 +1,81 @@
 {smcl}
-{* *! version 1.2 August 2016}{...}
-{cmd:help randtreat}{...}
-{hline}
-
+{* *! version 1.3 November 2016}{...}
 {title:Title}
 
-{pstd}
-{hi:randtreat} {hline 2} Random treatment assignment with unequal treatment fractions and dealing with misfits.
+{p2colset 5 18 22 2}{...}
+{p2col :{hi:randtreat} {hline 2}}Random treatment assignment and dealing with misfits{p_end}
+{p2colreset}{...}
 
+
+{marker syntax}{...}
 {title:Syntax}
 
 {p 8 16 2}
-{cmd:randtreat} [{varlist}]
-[, {opt r:eplace} {opt so:rtpreserve} {opt se:tseed(#)} {opt mu:lt(integer)} {opt u:nequal(fractions)} {opt mi:sfits(method)}]
+{cmd:randtreat} {ifin}
+[{cmd:,} {it:options}]
 {p_end}
 
 {synoptset 20 tabbed}{...}
 {synopthdr}
 {synoptline}
 {synoptset 20 tabbed}{...}
+{synopt:{opth st:rata(varlist)}} specify a list of variables to conduct a stratified assignment{p_end}
+{synopt:{opth mu:ltiple(integer)}} specify number of treatment groups; default is {cmd:multiple(2)}{p_end}
+{synopt:{opt u:nequal(fractions)}} specify fractions for unequal treatments; default is {cmd:unequal(1/2 1/2)}{p_end}
+{synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see below); {it:method} may be missing (default), strata, global, wstrata or wglobal{p_end}
+{synopt:{opt se:tseed(#)}} specify random-number seed to replicate assignment{p_end}
 {synopt:{opt r:eplace}} replace {bf:treatment} values{p_end}
-{synopt:{opt so:rtpreserve}} preserve sort order{p_end}
-{synopt:{opt se:tseed(#)}} specify random-number seed or state{p_end}
-{synopt:{opt mu:lt(integer)}} specify number of treatments, including control (default is 2){p_end}
-{synopt:{opt u:nequal(fractions)}} specify fractions for unequal treatments{p_end}
-{synopt:{opt mi:sfits(method)}} specify which method to use to deal with misfits (see below){p_end}
-
 {p 4 6 2}
 
 {title:Description}
 
 {pstd}
 The {cmd:randtreat} command performs random treatment assignment.
-It can handle an arbitrary number of treatments and unequal treatment fractions, which are common in real-world randomized control trials.
-Stratified randomization can be achieved by optionally specifying a variable list that defines multiple strata.
-It also provides several methods to deal with 'misfits', a practical issue that arises in treatment assignment whenever observations can't be neatly distributed among treatments.
-The command performs all tasks in a way that marks misfit observations and provides several methods to deal with those misfits.
+{cmd:randtreat}'s purpose is twofold: to easily randomize multiple, unequal treatments across strata and to provide methods to deal with "misfits" (see below).
+The program presumes that the current dataset corresponds to units (e.g. individuals, firms, etc.) to be randomly allocated to treatment statuses.
 
 {pstd}
-When run, it creates a new variable named {bf:treatment} that encodes the treatment allocation.
-The default number of treatments is two (a control group and a treatment group), but more can be specified with the {opt mu:lt(integer)} option.
-Also, unequal fractions of treatments may be specified using the {opt u:nequal(fractions)} option.
-Random assignment with all these options can be done within each strata defined by the unique combinations of values of {varlist}.
-The data will be sorted by {varlist} and {bf:treatment}, unless the {opt so:rtpreserve} option is issued.
-The seed can be set with the {opt se:tseed(#)} option, so the random assignment can be replicated.
+When run, it creates a new {bf:treatment} variable whose values indicate the random treatment assignment allocation.
+The seed can be set with the {opt setseed()} option, so the random assignment can be replicated.
+Although the command defaults to two treatments, more {it:equally} proportioned treatments can be specified with the {opt multiple()} option.
+Alternatively, multiple treatments of {it:unequal} proportions can be specified with the {opt unequal()} option.
+A stratified assignment can be performed using the {opth strata(varlist)} option.
+If specified, the random assingment will be carried out for each strata defined by the unique combinations of values of {varlist}.
 
 {pstd}
-When the number of observations in a given stratum is not a multiple of the number of even treatments, each stratum will have 'misfits' (i.e. units that can't be neatly distributed among the treatments).
-If unequal treatments are specified, then the problem arises whenever the number of observations in a given stratum is not a multiple of the least common multiple (LCM) of the fractions' denominators.
-When the command is run, it will display the number of misfits that the current setup yields.
-By specifying {opt mi:sfits(method)}, one can choose how to deal with those misfits.
+Whenever the number of observations in a given stratum is not a multiple of the number of treatments or the least common multiple of the treatment fractions, then that stratum is going to have "misfits", that is, observations that can't be neatly distributed among the treatments.
+When run, {cmd:randtreat} reports the number of misfits produced by the assignment in the current dataset.
+Misfits are automatically marked with missing values in the {bf:treatment} variable, but {cmd:randtreat} provides several methods to deal with them.
+The method can be specified with the {opt misfits()} option.
 
 {pstd}
-One of the first to discuss the 'misfits' issue were Bruhn and McKenzie (2011),
+One of the firsts to discuss the misfits problem were Bruhn and McKenzie (2011),
 in a {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-unequal-numbers-in-some-strata":World Bank Blog post}.
 A generalization of the problem and details of the Stata implementation can be found in 
-{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}.
+{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}, or my related {browse "http://alvarocarril.com/resources/randtreat":blog post}.
 
 {dlgtab:Options}
 
 {phang}
-{opt r:eplace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
-This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid {help drop:dropping} the {bf:treatment} variable every time.
+{opth strata(varlist)} is used to perform a stratified allocation on the variables in {varlist}.
+If specified, the random assignment will be carried out in each stratum identified by the unique combination of the {varlist} variables' values.
+Notice that this option is almost identical to using {cmd:by} (see {manhelp by D}), except that the command is not independently run for the specified variables, because global existence of misfits across strata must be accounted for.
 
 {phang}
-{opt so:rtpreserve} preserves the sorting order of the database. If not issued, the command will sort the data by {varlist} and {bf:treatment}.
+{opth multiple(integer)} specifies the number of treatments to be assigned.
+The default (and minimum) is {cmd:multiple(2)}, unless the {opt unequal()} option is specified (see below).
 
 {phang}
-{opt se:tseed(#)} specifies the initial value of the random-number seed used to assign treatments.
-It can be set so that the random treatment assignment can be replicated.
-See {help set seed:set seed} for more information.
+{opt unequal(fractions)} is used to specify unequal treatment fractions.
+Each fraction must be of the form a/b and must belong to (0,1).
+Fractions must be separated by spaces and their sum must add up exactly to 1.
+For example, {cmd:unequal(1/2 1/4 1/4)} will randomly assign half of the observations to the "control" group and then divide evenly the rest of the observations into two treatments.
+Notice that this option implicitly defines the number of treatments (e.g. 3), so when {opt unequal()} is used, {opt mult()} is redundant and should be avoided.
 
 {phang}
-{opt mu:lt(integer)} specifies the number of treatments (including a control group) that will be randomized.
-If not specified, it defaults to two (0 and 1), unless the {opt u:nequal()} option is specified (see below).
-
-{phang}
-{opt u:nequal(fractions)} serves two purposes.
- Explicitly, it defines unequal fractions for treatments.
- For example, specifying {opt u:nequal(1/2 1/4 1/4)} will randomly assign half of the observations to the control group and then divide evenly the rest of the observations amongst two treatments.
- Also, it implicitly defines the number of treatments. For example, in the aforementioned specification we implicitly defined 3 treatments (0, 1, 2).
- So when the {opt u:nequal()} option is used, {opt mu:lt()} is redundant and should be avoided.
- Only fractions can be specified, so {opt u:nequal(.5 .25 .25)}, though equivalent to our example, is not allowed. Each fraction must be belong in (0,1) and their sum must add up exactly to 1.
-
-{phang}
-{opt mi:sfits(method)} specifies which method to use in order to deal with misfits.
-More details on the internal workings of these methods are available in {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":my working paper}.
-The available {it:methods} are:
+{opt misfits(method)} specifies which method to use in order to deal with misfits.
+More details on the internal workings of these methods are available in {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}.
+The available {it:method}s are:
 
 {phang2}
 {it: missing} is the default option and simply leaves misfit observations as missing values in {bf:treatment}, so the user can later deal with misfits as he sees fit.
@@ -110,29 +99,46 @@ This ensures balance at the the global level and also respects unequal fractions
 However, this method doesn't ensure the global balance of misfits' treatment allocation (they could differ by more than 1).
 The downside is that this method could produce even greater unbalance at the finer level (in each stratum), specially if the number of misfits is relatively large.
 
+{phang}
+{opt setseed(#)} specifies the initial value of the random-number seed used to assign treatments.
+It can be set so that the random treatment assignment can be replicated.
+See {help set seed:set seed} for more information.
+
+{phang}
+{opt replace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
+This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid dropping the {bf:treatment} variable every time.
+
 {title:Examples}
+
+{pstd}
 I suggest you {cmd:{help tabulate} {bf:treatment}} with the {cmd:missing} option after running each example.
+First, load the fictional blood-pressure data:
 
 	{cmd:sysuse bpwide, clear}
 
+{pstd}
 Basic usage:
+
 	{cmd:randtreat}
-	{cmd:randtreat, sortpreserve}
 	{cmd:randtreat, replace mult(5)}
 
+{pstd}
 Define stratification variables and unequal treatments, dealing with misfits:
-	{cmd:randtreat sex agegrp, r u(1/2 1/3 1/6)}
-	{cmd:randtreat sex agegrp, r u(1/2 1/3 1/6) misfits(strata)}
-	{cmd:randtreat sex agegrp, r u(1/2 1/3 1/6) mi(overall)}
-	
-Choose very unbalanced treatment fractions and dealing with misfits with and without weights:
-	{cmd:randtreat, r unequal(2/5 1/5 1/5 1/5) mi(global) se(12345)}
-	{cmd:randtreat, r unequal(2/5 1/5 1/5 1/5) mi(wglobal) se(12345)}
 
+	{cmd:randtreat, replace unequal(1/2 1/3 1/6)}
+	{cmd:randtreat, replace unequal(1/2 1/3 1/6) strata(sex agegrp) misfits(strata)}
+	{cmd:randtreat, replace unequal(1/2 1/3 1/6) strata(sex agegrp) misfits(overall)}
+
+{pstd}	
+Choose very unbalanced treatment fractions and dealing with misfits with and without weights:
+
+	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(global) setseed(12345)}
+	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(wglobal) setseed(12345)}
 
 {title:Notes}
+
 {pstd}
-Beware of (ab)using the {opt u:nequal()} with fractions that yield a large least common multiple (LCM), because that may produce a large number of misfits. Consider for example:
+Beware of (ab)using {opt unequal()} with fractions that yield a large least common multiple (LCM), because that may produce a large number of misfits. Consider for example:
 	
 	{cmd: sysuse bpwide, clear}
 	{cmd: randtreat, unequal(2/5 1/3 3/20 3/20)}
@@ -140,23 +146,25 @@ Beware of (ab)using the {opt u:nequal()} with fractions that yield a large least
 	
 {pstd}
 Since the LCM of the specified fractions is 60, the theoretical maximum number of misfits per stratum could be 59.
-In this particular dataset, this configuration produces 58 misfits, which is a relatively large number (dataset has 120 observations).
+In this particular dataset, this configuration produces 58 misfits, which is a relatively large number given that the dataset has 120 observations.
 
 {title:Author}
+
 {pstd}Alvaro Carril{break}
 Research Analyst at J-PAL LAC{break}
 acarril@fen.uchile.cl
 
 {title:Acknowledgements}
+
 {pstd}
 I'm indebted to several "random helpers" at the Random Help Google user group and in the Statalist Forum, who provided coding advice and snippets.
 Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, put up with my incoherent ideas and helped me steer this into something mildly useful.
 
 {title:References}
-{phang}Bruhn, Miriam, and David McKenzie. 2011. Tools of the Trade: Doing Stratified Randomization with Uneven Numbers in Some Strata.ù Blog. The World Bank: Impact Evaluations.
+
+{phang}Bruhn, Miriam, and David McKenzie. 2011. Tools of the Trade: Doing Stratified Randomization with Uneven Numbers in Some Strata. Blog. The World Bank: Impact Evaluations.
 {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-unequal-numbers-in-some-strata"}.
 
-{phang}Carril, Alvaro. 2016. Dealing with misfits in random treatment assignment.ù Working Paper. DOI: 10.13140/RG.2.1.2859.8807
+{phang}Carril, Alvaro. 2016. Dealing with misfits in random treatment assignment. Working Paper. DOI: 10.13140/RG.2.1.2859.8807
 {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment"}.
 
-.
