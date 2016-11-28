@@ -1,5 +1,5 @@
-*! 1.2 Alvaro Carril aug2016
-program define randtreat
+*! 1.3 Alvaro Carril nov2016
+program define randtreat, sortpreserve
 	version 11
 
 syntax [varlist(default=none)] /// 
