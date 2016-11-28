@@ -9,11 +9,6 @@ syntax [varlist(default=none)] ///
 * Input checks
 *-------------------------------------------------------------------------------
 
-* setseed()
-if missing("`setseed'") {
-	local setseed `c(seed)' // If setseed is not used, set seed to current state
-	}
-
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
@@ -67,10 +62,12 @@ if !missing("`misfits'") {
 
 // Initial setup
 tempvar randnum rank_treat misfit cellid obs
-set seed `setseed'
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
+
+// Set seed
+if !missing("`setseed'") set seed `setseed'
 
 // local with all treatments (B vector)
 forvalues i = 1/`mult' {
