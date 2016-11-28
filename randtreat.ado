@@ -26,7 +26,7 @@ if missing("`unequal'") {
 // If unequal() is specified, perform various checks
 else {
 	// If mult() is empty, replace it with the number of fractions in unequal()
-	if `mult'==0  {
+	if missing("`mult'")  {
 		local mult : list sizeof unequal
 	}
 	// Check that unequal() has same number of fractions as the number of treatments specified in mult()
@@ -171,11 +171,13 @@ local first : word 1 of `randpack'
 gen double `randnum' = runiform()
 
 * First-pass randomization
+*-------------------------------------------------------------------------------
+
 // Random sort on strata
 sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
+
 // Assign treatments randomly and according to specified proportions in unequal()
-sort `touse' `stratvars' `randnum', stable
 quietly bysort `touse' `stratvars' (`_n') : gen treatment = `first' if `touse'
 quietly by `touse' `stratvars' : replace treatment = ///
 	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
@@ -264,6 +266,7 @@ CHANGE LOG
 	sums greater than 1
 	- improvements in setseed option: accept only integers and only set seed if
 	option is specified
+	- implement stratification varlist as strata() option with `stratvars' local
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
