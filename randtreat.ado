@@ -8,11 +8,6 @@ syntax [varlist(default=none)] ///
 *-------------------------------------------------------------------------------
 * Input checks
 *-------------------------------------------------------------------------------
-* sortpreserve
-if !missing("`sortpreserve'") {
-	tempvar sortindex
-	gen int `sortindex' = _n // If sortpreserve is not used, generate index var
-}
 
 * setseed()
 if missing("`setseed'") {
@@ -268,6 +263,9 @@ end
 
 /* 
 CHANGE LOG
+1.4
+	- sortpreserve as default program option
+	-
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
