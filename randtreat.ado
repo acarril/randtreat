@@ -2,9 +2,13 @@
 program define randtreat, sortpreserve
 	version 11
 
-syntax [varlist(default=none)] /// 
-	[, Replace SEtseed(integer -1) Unequal(string) MUlt(integer 0) MIsfits(string)]
-	
+syntax [ ,	strata(varlist numeric) ///
+			MUlt(integer 2) ///
+			Unequal(string) ///
+			MIsfits(string) ///
+			SEtseed(integer -1 ///
+			Replace ]
+
 *-------------------------------------------------------------------------------
 * Input checks
 *-------------------------------------------------------------------------------
@@ -12,9 +16,6 @@ syntax [varlist(default=none)] ///
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
-	if `mult'==0 {
-		local mult = 2
-	}
 	forvalues i = 1/`mult' {
 		local unequal `unequal' 1/`mult'
 	}
@@ -123,6 +124,7 @@ local lcm = `r(lcm)'
 forvalues i = 1/`T' {
 	local randpack1 `randpack1' `lcm'*`u`i''
 }
+
 // tokenize randpack1 with 'aux' stub --> three loops may be inefficient
 tokenize `randpack1'
 forvalues i = 1/`T' {
@@ -131,6 +133,7 @@ forvalues i = 1/`T' {
 forvalues i = 1/`T' {
 	local randpack2 `randpack2' `aux`i''
 }
+
 // generate randpack
 forvalues k = 1/`T' {
 	forvalues i = 1/`aux`k'' {
@@ -205,9 +208,8 @@ if "`misfits'" == "strata" {
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
-* Decrease treatment values, just so control is 0.
-quietly replace treatment = treatment-1
 
+quietly replace treatment = treatment-1
 end
 
 *-------------------------------------------------------------------------------
@@ -257,6 +259,8 @@ CHANGE LOG
 	- sortpreserve as default program option
 	- improve unequal() fractions sum check to be more precise and account for
 	sums greater than 1
+	- improvements in setseed option: accept only integers and only set seed if
+	option is specified
 1.2
 	- Added separate sub-programs for GCD and LCM (thanks to Nils Enevoldsen)
 	- Simplified fractions in unequal()
