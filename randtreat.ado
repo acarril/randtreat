@@ -13,6 +13,8 @@ syntax [if] [in] [ , STrata(varlist numeric) ///
 * Input checks
 *-------------------------------------------------------------------------------
 
+* algun cambio
+
 * stratvars()
 local stratvars `strata'
 
