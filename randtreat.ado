@@ -1,4 +1,4 @@
-*! 1.3 Alvaro Carril 28nov2016
+*! 1.4 Kelsey Larson 13Feb2017
 program define randtreat, sortpreserve
 	version 11
 
@@ -8,6 +8,8 @@ syntax [if] [in] [ , STrata(varlist numeric) ///
 	MIsfits(string) ///
 	SEtseed(integer -1) ///
 	GENerate(name) ///
+	RERANDomize(integer 1) ///
+	BALance(varlist) ///
 	Replace ]
 
 *-------------------------------------------------------------------------------
@@ -61,8 +63,14 @@ if !missing("`replace'") {
 //confirm generate variable doesn't exist at this point
 cap confirm variable `generate'
 if !_rc {
-	display as error "`generate' already defined; specify 'replace' to replace `generate' or 'generate' to assign a different name"
+	display as error "`generate' already defined; specify 'replace' to replace `generate' or 'generate()' to assign a different name"
 	exit 110
+}
+
+// Rerandomize: check that balance vars listed if rerandomize > 1
+if `rerandomize' > 1 & missing("`balance'") {
+	di as error "rerandomization requires 'balance()' to be specified"
+	exit 126
 }
 
 * misfits()
@@ -177,54 +185,104 @@ if `unequal_sum' != 1 {
 *-------------------------------------------------------------------------------
 * The actual randomization stuff
 *-------------------------------------------------------------------------------
+loc best_minp = 0 // set up for rerandomization repeats
+loc bestseed = `setseed' // set seed for first loop as best
+tempfile best_rand // to contain the results of the best randomization
+gen `generate' = .
 
-* Create some locals and tempvar for randomization
-local first : word 1 of `randpack'
-gen double `randnum' = runiform()
+forval loop = 1 / `rerandomize' {
+	* display every 10th loop
+	if mod(`loop', 10) == 0 di "loop `loop'"
+	* Create some locals and tempvar for randomization
+	set seed `setseed'
+	local first : word 1 of `randpack'
+	gen double `randnum' = runiform()
 
-* First-pass randomization
-*-------------------------------------------------------------------------------
+	* First-pass randomization
+	*-------------------------------------------------------------------------------
 
-// Random sort on strata
-sort `touse' `stratvars' `randnum', stable
-gen long `obs' = _n
+	// Random sort on strata
+	sort `touse' `stratvars' `randnum', stable
+	gen long `obs' = _n
 
-// Assign treatments randomly and according to specified proportions in unequal()
-quietly bysort `touse' `stratvars' (`_n') : gen `generate' = `first' if `touse'
-quietly by `touse' `stratvars' : replace `generate' = ///
-	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
-	
-// Mark misfits as missing values and display that count
-quietly by `touse' `stratvars' : replace `generate' = . if _n > _N - mod(_N,`J')
-quietly count if mi(`generate') & `touse'
-di as text "assignment produces `r(N)' misfits"
+	// Assign treatments randomly and according to specified proportions in unequal()
+	quietly bysort `touse' `stratvars' (`_n') : replace `generate' = `first' if `touse'
+	quietly by `touse' `stratvars' : replace `generate' = ///
+		real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
+		
+	// Mark misfits as missing values and display that count
+	quietly by `touse' `stratvars' : replace `generate' = . if _n > _N - mod(_N,`J')
+	quietly count if mi(`generate') & `touse'
+	if `loop' == 1 di as text "assignment produces `r(N)' misfits"
 
-* Dealing with misfits
-*-------------------------------------------------------------------------------
-// wglobal
-if "`misfits'" == "wglobal" {
-	quietly replace `generate' = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
+	* Dealing with misfits
+	*-------------------------------------------------------------------------------
+	// wglobal
+	if "`misfits'" == "wglobal" {
+		quietly replace `generate' = ///
+			real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
+	}
+	// wstrata
+	if "`misfits'" == "wstrata" {
+		quietly bys `touse' `stratvars' : replace `generate' = ///
+			real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
+	}
+	// global
+	if "`misfits'" == "global" {
+		quietly replace `generate' = ///
+			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
+	}
+	// strata
+	if "`misfits'" == "strata" {
+		quietly bys `touse' `stratvars' : replace `generate' = ///
+			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
+	}
+	* Calculate p-values
+	*----------------------------------------------------------------------------
+	mata: p = 1
+	qui if !missing("`balance'") {
+		local test
+		mata: p = 1 // creates vector for p-values
+		* create test for all treatments
+		forval x = 1 / `multiple' { 
+			local test "`test' `x'.`generate'"
+			if `x' != `multiple' local test = "`test' =="
+		}
+		* perform tests
+		foreach var of varlist `balance' {
+			regress `var' i.`generate'
+			test `test'
+			mata: p = (p, `r(p)')
+			forval i = 1 / `multiple' {
+				test `i'.`generate' == 0
+				mata: p = (p, `r(p)')
+			}
+		}
+		* calculate minimum p-value and, if greater than previous min, make new best seed
+		mata: findmin(p)
+		di "`min(p)'"
+		if `r(min)' > `best_minp' {
+			noi di "new minp: `r(min)' "
+			noi di "new best seed: `setseed'"
+			loc best_minp = `r(min)'
+			loc bestseed `setseed'
+			save `best_rand', replace
+		}
+	}
+	drop `randnum' `obs'
+	local setseed = `setseed' + 1 // set up for next loop
+			
 }
-// wstrata
-if "`misfits'" == "wstrata" {
-	quietly bys `touse' `stratvars' : replace `generate' = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
-}
-// global
-if "`misfits'" == "global" {
-	quietly replace `generate' = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
-}
-// strata
-if "`misfits'" == "strata" {
-	quietly bys `touse' `stratvars' : replace `generate' = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
-}
-
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
+if !missing("balance") {
+	di "Randomization complete!"
+	di "Best seed is `bestseed'"
+	di "minimum p-val is `best_minp'"
+	
+	use `best_rand', clear
+}
 
 quietly replace `generate' = `generate' - 1
 end
@@ -268,10 +326,26 @@ program define lcmm, rclass
     return scalar lcm = r(lcm)
 end
 
+*calculate minimum of vector in mata and return in r(min)
+capture mata: mata drop findmin()
+mata:
+void findmin(real vector c)
+{
+	real scalar min
+	min = min(c)
+	st_numscalar("r(min)", min)
+}
+
+end
+
+
 ********************************************************************************
 
 /* 
 CHANGE LOG
+1.4
+	- Implemented rerandomization procedure and option
+	- Implemented generate() option
 1.3
 	- sortpreserve as default program option
 	- Improve unequal() fractions sum check to be more precise and account for
@@ -316,10 +390,5 @@ CHANGE LOG
 1.0.0
 	- First working version
 
-TODOS (AND IDEAS TO MAKE RANDTREAT EVEN COOLER)
-- Use gen(varname) instead of hard-wired 'treatment'. Would loose 'replace' though (?)
-- Add support for [if] and [in].
-- Support for [by](?) May be redundant/confusing.
-- Store in e() and r(): seed? seed stage?
 */
 
