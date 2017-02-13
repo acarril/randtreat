@@ -7,6 +7,7 @@ syntax [if] [in] [ , STrata(varlist numeric) ///
 	Unequal(string) ///
 	MIsfits(string) ///
 	SEtseed(integer -1) ///
+	GENerate(name) ///
 	Replace ]
 
 *-------------------------------------------------------------------------------
@@ -47,11 +48,21 @@ else {
 	}
 }
 
-* replace
+* generate and replace 
+// replace generate with "treatment" if no name is specified
+if missing("`generate'") {
+	local generate treatment
+}
 // If specified, check if 'treatment' variable exists and drop it before the show starts
 if !missing("`replace'") {
-	capture confirm variable treatment
-	if !_rc drop treatment
+	capture confirm variable `generate'
+	if !_rc drop `generate'
+}
+//confirm generate variable doesn't exist at this point
+cap confirm variable `generate'
+if !_rc {
+	display as error "`generate' already defined; specify 'replace' to replace `generate' or 'generate' to assign a different name"
+	exit 110
 }
 
 * misfits()
@@ -179,43 +190,43 @@ sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
 
 // Assign treatments randomly and according to specified proportions in unequal()
-quietly bysort `touse' `stratvars' (`_n') : gen treatment = `first' if `touse'
-quietly by `touse' `stratvars' : replace treatment = ///
+quietly bysort `touse' `stratvars' (`_n') : gen `generate' = `first' if `touse'
+quietly by `touse' `stratvars' : replace `generate' = ///
 	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
 	
 // Mark misfits as missing values and display that count
-quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
-quietly count if mi(treatment) & `touse'
+quietly by `touse' `stratvars' : replace `generate' = . if _n > _N - mod(_N,`J')
+quietly count if mi(`generate') & `touse'
 di as text "assignment produces `r(N)' misfits"
 
 * Dealing with misfits
 *-------------------------------------------------------------------------------
 // wglobal
 if "`misfits'" == "wglobal" {
-	quietly replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
+	quietly replace `generate' = ///
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
 }
 // wstrata
 if "`misfits'" == "wstrata" {
-	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
+	quietly bys `touse' `stratvars' : replace `generate' = ///
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`generate') & `touse'
 }
 // global
 if "`misfits'" == "global" {
-	quietly replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
+	quietly replace `generate' = ///
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
 }
 // strata
 if "`misfits'" == "strata" {
-	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
+	quietly bys `touse' `stratvars' : replace `generate' = ///
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`generate') & `touse'
 }
 
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
 
-quietly replace treatment = treatment-1
+quietly replace `generate' = `generate' - 1
 end
 
 *-------------------------------------------------------------------------------
