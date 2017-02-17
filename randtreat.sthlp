@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3 November 2016}{...}
+{* *! version 1.4 February 2017}{...}
 {title:Title}
 
 {p2colset 5 18 22 2}{...}
@@ -23,8 +23,17 @@
 {synopt:{opth mu:ltiple(integer)}} specify number of treatment groups; default is {cmd:multiple(2)}{p_end}
 {synopt:{opt u:nequal(fractions)}} specify fractions for unequal treatments; default is {cmd:unequal(1/2 1/2)}{p_end}
 {synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see below); {it:method} may be missing (default), strata, global, wstrata or wglobal{p_end}
+{synopt:{opt gen:erate(newvar)} specify a name for the randomization variable; default is {cmd:generate(treatment)}{p_end}
+{synopt:{opt rerand:omize(integer)}} specify number of rerandomizations; default is {cmd:rerandomize(1)}{p_end}
+{synopt:{opt bal:ance(varlist)}} specify variables to check for balance on rerandomizations. {p_end}
 {synopt:{opt se:tseed(#)}} specify random-number seed to replicate assignment{p_end}
 {synopt:{opt r:eplace}} replace {bf:treatment} values{p_end}
+{synopt:{opt cl:uster(varlist, [, collapseoptions])}} specify a cluster randomization, with clusters defined by {it:varlist}.{p_end}
+	{col 3}{it:collapse options} 
+	{col 6}{it:collapse opts} take the form {it:(stat) varlist}, where {it:stat} can be any of the statistics used by {help collapse:collapse}.
+	These options specify the handling of stratification and balance variables during the collapse command before a cluster randomization. 
+	
+	
 {p 4 6 2}
 
 {title:Description}
@@ -35,12 +44,13 @@ The {cmd:randtreat} command performs random treatment assignment.
 The program presumes that the current dataset corresponds to units (e.g. individuals, firms, etc.) to be randomly allocated to treatment statuses.
 
 {pstd}
-When run, it creates a new {bf:treatment} variable whose values indicate the random treatment assignment allocation.
+When run, it creates a new variable whose values indicate the random treatment assignment allocation.
 The seed can be set with the {opt setseed()} option, so the random assignment can be replicated.
 Although the command defaults to two treatments, more {it:equally} proportioned treatments can be specified with the {opt multiple()} option.
 Alternatively, multiple treatments of {it:unequal} proportions can be specified with the {opt unequal()} option.
 A stratified assignment can be performed using the {opth strata(varlist)} option.
-If specified, the random assingment will be carried out for each strata defined by the unique combinations of values of {varlist}.
+If specified, the random assignment will be carried out for each strata defined by the unique combinations of values of {varlist}.
+The program can also carry out rerandomizations, selecting the randomization with the minimum maximum p-value of treatment on the variables in {opt balance(varlist)}.
 
 {pstd}
 Whenever the number of observations in a given stratum is not a multiple of the number of treatments or the least common multiple of the treatment fractions, then that stratum is going to have "misfits", that is, observations that can't be neatly distributed among the treatments.
@@ -52,7 +62,7 @@ The method can be specified with the {opt misfits()} option.
 One of the firsts to discuss the misfits problem were Bruhn and McKenzie (2011),
 in a {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-unequal-numbers-in-some-strata":World Bank Blog post}.
 A generalization of the problem and details of the Stata implementation can be found in 
-{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}, or my related {browse "http://alvarocarril.com/resources/randtreat":blog post}.
+{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}, or a related {browse "http://alvarocarril.com/resources/randtreat":blog post}.
 
 {dlgtab:Options}
 
@@ -71,6 +81,9 @@ Each fraction must be of the form a/b and must belong to (0,1).
 Fractions must be separated by spaces and their sum must add up exactly to 1.
 For example, {cmd:unequal(1/2 1/4 1/4)} will randomly assign half of the observations to the "control" group and then divide evenly the rest of the observations into two treatments.
 Notice that this option implicitly defines the number of treatments (e.g. 3), so when {opt unequal()} is used, {opt mult()} is redundant and should be avoided.
+
+{phang}
+{opt generate(newvar)} specifies the name of the new variable to be created or the variable to be replaced. The default is {opt generate(treatment)}.
 
 {phang}
 {opt misfits(method)} specifies which method to use in order to deal with misfits.
@@ -100,6 +113,16 @@ However, this method doesn't ensure the global balance of misfits' treatment all
 The downside is that this method could produce even greater unbalance at the finer level (in each stratum), specially if the number of misfits is relatively large.
 
 {phang}
+{opt rerandomize(integer)} specifies the number of rerandomizations that should be performed.
+The rerandomization will select the randomization with the minimum maximum p-value from regressing the treatments on the balance variables specified by {opt balance(varlist)}.
+When rerandomizing, the program will use the seed set in {opt setseed(#)} for the first randomization, and then will increase the seed by 1 for each subsequent loop.
+When the program has completed the number of randomizations set by {opt rerandomize(integer)}, it will return the randomization with the minimum maximum p-value.
+
+{phang}
+{opt balance(varlist)} specifies the variables that should be used for rerandomization, and has no impact if not used in conjunction with rerandomize.
+The rerandomization procedure keeps the randomization with the minimum maximum p-value created by regressing the i.treatment on the balance variables.
+
+{phang}
 {opt setseed(#)} specifies the initial value of the random-number seed used to assign treatments.
 It can be set so that the random treatment assignment can be replicated.
 See {help set seed:set seed} for more information.
@@ -108,6 +131,16 @@ See {help set seed:set seed} for more information.
 {opt replace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
 This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid dropping the {bf:treatment} variable every time.
 
+{phang}
+{opt cluster(varlist [, collapseoptions])} specifies a cluster randomization, where the clusters are identified by {it:varlist}.
+To perform the cluster randomization, the program first collapses the entries by {it:varlist}. 
+It will collapse the variables specified by {opt: balance} or {opt:strata} according to the options set in {it: collapseoptions},
+which are specified in the {it: (stat1) varlist (stat2) varlist ... (statn) varlist} syntax used in {help collapse:collapse}.
+Variables that are constant within clusters do not need to be specified, as that constant value will be used in the randomization.
+All variables in {opt:balance} and {opt:strata} that are not constant must be included in {it:collapseoptions} for the program to run.
+If {opt:cluster} is used in conjunction with {ifin}, observations that do not meet the criteria will be removed before the {cmd:collapse}
+is performed. Caution is advised in using {ifin} in conjunction with {opt:cluster}. 
+
 {title:Examples}
 
 {pstd}
@@ -115,6 +148,7 @@ I suggest you {cmd:{help tabulate} {bf:treatment}} with the {cmd:missing} option
 First, load the fictional blood-pressure data:
 
 	{cmd:sysuse bpwide, clear}
+	{cmd:gen hospital = mod(_n, 12)}
 
 {pstd}
 Basic usage:
@@ -135,6 +169,17 @@ Choose very unbalanced treatment fractions and dealing with misfits with and wit
 	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(global) setseed(12345)}
 	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(wglobal) setseed(12345)}
 
+{pstd}
+Rerandomize to balance along bp_before, agegroup, and sex, while stratifying by hospital.
+	
+	{cmd: randtreat, replace rerandomize(100) balance(bp_before agegroup sex) strata(hospital) misfits(strata)}
+
+{pstd}
+Perform cluster randomization by hospital, without and with rerandomization:
+
+	{cmd:randtreat, replace generate(hosp_treat) cluster(hospital)}
+	{cmd:randtreat, replace rerandomize(100) balance(sex agegrp) cluster(hospital, (mean) sex agegrp))}
+
 {title:Notes}
 
 {pstd}
@@ -153,6 +198,10 @@ In this particular dataset, this configuration produces 58 misfits, which is a r
 {pstd}Alvaro Carril{break}
 Research Analyst at J-PAL LAC{break}
 acarril@fen.uchile.cl
+
+{pstd}Revisions by Kelsey Larson{break}
+Research Analyst at Innovations for Poverty Action{break}
+klarson@poverty-action.org
 
 {title:Acknowledgements}
 
