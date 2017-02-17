@@ -10,6 +10,7 @@ syntax [if] [in] [ , STrata(varlist numeric) ///
 	GENerate(name) ///
 	RERANDomize(integer 1) ///
 	BALance(varlist) ///
+	CLuster(string asis) ///
 	Replace ]
 
 *-------------------------------------------------------------------------------
@@ -22,11 +23,13 @@ local stratvars `strata'
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
+	if `multiple' == -1 {
+		local multiple 2 // set mult to 2 if neither mult() or unequal() are specified
+	}
 	forvalues i = 1/`multiple' {
 		local unequal `unequal' 1/`multiple'
 	}
 }
-// If unequal() is specified, perform various checks
 else {
 	// If mult() is empty, replace it with the number of fractions in unequal()
 	if `multiple'==-1  {
@@ -55,7 +58,7 @@ else {
 if missing("`generate'") {
 	local generate treatment
 }
-// If specified, check if 'treatment' variable exists and drop it before the show starts
+// If replace is specified, check if 'generate' variable exists and drop it before the show starts
 if !missing("`replace'") {
 	capture confirm variable `generate'
 	if !_rc drop `generate'
@@ -72,6 +75,10 @@ if `rerandomize' > 1 & missing("`balance'") {
 	di as error "rerandomization requires 'balance()' to be specified"
 	exit 126
 }
+if `rerandomize' == 1 & !missing("`balance'") {
+	di as error "'balance' must be specified in conjunction with 'rerandomize'"
+	exit 126
+}
 
 * misfits()
 // If specified, check that a valid option was passed
@@ -85,10 +92,44 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 
 // Initial setup
-tempvar randnum rank_treat misfit cellid obs
+tempvar randnum rank_treat misfit cellid obs bigN littleN
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
+
+* Collapse into a single entry for each cluster in cluster randomization
+*-------------------------------------------------------------------------------
+if !missing(`"`cluster'"') {
+	preserve 
+	keep if `touse'
+	gettoken clusterid collapserule: cluster, parse(",") // separate the cluster id vars from the collapse instructions
+	local collapserule = subinstr(`"`collapserule'"', ",", "", 1) // remove the comma
+	local needvars `strata' `balance'
+	local needvars: list needvars - collapserule
+	
+	* confirm that needed variables not listed in cluster command are constant within cluster ids
+	if `: word count `needvars'' != 0 {
+		bysort `clusterid': gen `bigN' = _N
+		gen `littleN' = .
+		
+		foreach var of varlist `needvars' {
+			bysort `clusterid' `var': replace `littleN' = _N
+			cap assert `littleN' == `bigN' // if these are not the same, there are multiple levels for some variable within the cluster id
+			if _rc {
+				di as error "`var' not constant within cluster groups: handling of `var' must be specified in 'cluster' suboptions"
+				exit 126
+			}
+		}
+		local needvars `"(first) `needvars'"'
+	}
+	collapse `touse' `collapserule' `needvars', by(`clusterid') // `touse' is included so that collapse will still run if `collapserule' and `needvars' are empty
+}
+	
+		
+
+
+* Construct randpack
+*-------------------------------------------------------------------------------
 
 // Set seed
 if `setseed' != -1 set seed `setseed'
@@ -100,9 +141,6 @@ forvalues i = 1/`multiple' {
 
 // local with number of treatments (T)
 local T = `multiple'
-
-* Construct randpack
-*-------------------------------------------------------------------------------
 
 // local `unequal2' with spaces instead of slashes
 local unequal2 = subinstr("`unequal'", "/", " ", .)
@@ -260,7 +298,6 @@ forval loop = 1 / `rerandomize' {
 		}
 		* calculate minimum p-value and, if greater than previous min, make new best seed
 		mata: findmin(p)
-		di "`min(p)'"
 		if `r(min)' > `best_minp' {
 			noi di "new minp: `r(min)' "
 			noi di "new best seed: `setseed'"
@@ -276,12 +313,21 @@ forval loop = 1 / `rerandomize' {
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
-if !missing("balance") {
+if !missing("`balance'") {
 	di "Randomization complete!"
 	di "Best seed is `bestseed'"
 	di "minimum p-val is `best_minp'"
 	
 	use `best_rand', clear
+}
+
+*cluster randomization: merge randomization into entire dataset
+if `: strlen local cluster' > 0 {
+	tempfile rand
+	keep `clusterid' `generate'
+	save `rand'
+	restore
+	merge m:1 `clusterid' using `rand', nogen
 }
 
 quietly replace `generate' = `generate' - 1
@@ -344,8 +390,9 @@ end
 /* 
 CHANGE LOG
 1.4
-	- Implemented rerandomization procedure and option
+	- Implemented rerandomization procedure and option: balance() and rerandomize()
 	- Implemented generate() option
+	- Implemented cluster() option
 1.3
 	- sortpreserve as default program option
 	- Improve unequal() fractions sum check to be more precise and account for

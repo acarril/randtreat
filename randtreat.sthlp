@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.3 November 2016}{...}
+{* *! version 1.4 February 2017}{...}
 {title:Title}
 
 {p2colset 5 18 22 2}{...}
@@ -28,6 +28,12 @@
 {synopt:{opt bal:ance(varlist)}} specify variables to check for balance on rerandomizations. {p_end}
 {synopt:{opt se:tseed(#)}} specify random-number seed to replicate assignment{p_end}
 {synopt:{opt r:eplace}} replace {bf:treatment} values{p_end}
+{synopt:{opt cl:uster(varlist, [, collapseoptions])}} specify a cluster randomization, with clusters defined by {it:varlist}.{p_end}
+	{col 3}{it:collapse options} 
+	{col 6}{it:collapse opts} take the form {it:(stat) varlist}, where {it:stat} can be any of the statistics used by {help collapse:collapse}.
+	These options specify the handling of stratification and balance variables during the collapse command before a cluster randomization. 
+	
+	
 {p 4 6 2}
 
 {title:Description}
@@ -125,6 +131,16 @@ See {help set seed:set seed} for more information.
 {opt replace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
 This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid dropping the {bf:treatment} variable every time.
 
+{phang}
+{opt cluster(varlist [, collapseoptions])} specifies a cluster randomization, where the clusters are identified by {it:varlist}.
+To perform the cluster randomization, the program first collapses the entries by {it:varlist}. 
+It will collapse the variables specified by {opt: balance} or {opt:strata} according to the options set in {it: collapseoptions},
+which are specified in the {it: (stat1) varlist (stat2) varlist ... (statn) varlist} syntax used in {help collapse:collapse}.
+Variables that are constant within clusters do not need to be specified, as that constant value will be used in the randomization.
+All variables in {opt:balance} and {opt:strata} that are not constant must be included in {it:collapseoptions} for the program to run.
+If {opt:cluster} is used in conjunction with {ifin}, observations that do not meet the criteria will be removed before the {cmd:collapse}
+is performed. Caution is advised in using {ifin} in conjunction with {opt:cluster}. 
+
 {title:Examples}
 
 {pstd}
@@ -132,6 +148,7 @@ I suggest you {cmd:{help tabulate} {bf:treatment}} with the {cmd:missing} option
 First, load the fictional blood-pressure data:
 
 	{cmd:sysuse bpwide, clear}
+	{cmd:gen hospital = mod(_n, 12)}
 
 {pstd}
 Basic usage:
@@ -152,6 +169,17 @@ Choose very unbalanced treatment fractions and dealing with misfits with and wit
 	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(global) setseed(12345)}
 	{cmd:randtreat, replace unequal(2/5 1/5 1/5 1/5) misfits(wglobal) setseed(12345)}
 
+{pstd}
+Rerandomize to balance along bp_before, agegroup, and sex, while stratifying by hospital.
+	
+	{cmd: randtreat, replace rerandomize(100) balance(bp_before agegroup sex) strata(hospital) misfits(strata)}
+
+{pstd}
+Perform cluster randomization by hospital, without and with rerandomization:
+
+	{cmd:randtreat, replace generate(hosp_treat) cluster(hospital)}
+	{cmd:randtreat, replace rerandomize(100) balance(sex agegrp) cluster(hospital, (mean) sex agegrp))}
+
 {title:Notes}
 
 {pstd}
@@ -170,6 +198,10 @@ In this particular dataset, this configuration produces 58 misfits, which is a r
 {pstd}Alvaro Carril{break}
 Research Analyst at J-PAL LAC{break}
 acarril@fen.uchile.cl
+
+{pstd}Revisions by Kelsey Larson{break}
+Research Analyst at Innovations for Poverty Action{break}
+klarson@poverty-action.org
 
 {title:Acknowledgements}
 
