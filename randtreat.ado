@@ -207,10 +207,15 @@ if "`misfits'" == "global" {
 }
 // strata
 if "`misfits'" == "strata" {
-	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
+	tempvar strata
+	egen `strata' = group(`stratvars') if `touse'
+	qui levelsof `strata', local(Nstrata)
+	foreach s in `Nstrata' {
+		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
+		quietly bys `touse' : replace treatment = ///
+			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `strata'==`s' & `touse' 
+	}
 }
-
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
