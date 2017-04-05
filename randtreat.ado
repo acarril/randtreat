@@ -3,7 +3,7 @@ program define randtreat, sortpreserve
 	version 11
 
 syntax [if] [in] [ , STrata(varlist numeric) ///
-	MUltiple(integer -1) ///
+	MUltiple(integer 2) ///
 	Unequal(string) ///
 	MIsfits(string) ///
 	SEtseed(integer -1) ///
