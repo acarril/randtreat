@@ -1,9 +1,9 @@
-*! 1.3 Alvaro Carril 28nov2016
+*! 1.4 Alvaro Carril 28nov2016
 program define randtreat, sortpreserve
 	version 11
 
 syntax [if] [in] [ , STrata(varlist numeric) ///
-	MUltiple(integer 2) ///
+	MUltiple(integer -1) ///
 	Unequal(string) ///
 	MIsfits(string) ///
 	SEtseed(integer -1) ///
@@ -19,6 +19,9 @@ local stratvars `strata'
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
 if missing("`unequal'") {
+	// If multiple() is also empty, set to 2 treatments
+	if `multiple'==-1 local multiple 2
+	// Create fractions in unequal with even treatments
 	forvalues i = 1/`multiple' {
 		local unequal `unequal' 1/`multiple'
 	}
@@ -145,6 +148,9 @@ forvalues k = 1/`T' {
 	}
 }
 local J `lcm' // size of randpack
+
+di "`randpack'"
+di "`treatments'"
 
 * random shuffle of randpack and treatments
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
