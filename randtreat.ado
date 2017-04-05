@@ -69,10 +69,14 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 
 // Initial setup
-tempvar randnum rank_treat misfit cellid obs
+tempvar strata randnum rank_treat misfit cellid obs
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
+
+// Create strata tempvar and local with levels
+egen `strata' = group(`stratvars') if `touse'
+qui levelsof `strata', local(Nstrata)
 
 // Set seed
 if `setseed' != -1 set seed `setseed'
@@ -149,9 +153,6 @@ forvalues k = 1/`T' {
 }
 local J `lcm' // size of randpack
 
-di "`randpack'"
-di "`treatments'"
-
 * random shuffle of randpack and treatments
 mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
 mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
@@ -193,11 +194,6 @@ quietly by `touse' `stratvars' : replace treatment = ///
 quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
 quietly count if mi(treatment) & `touse'
 di as text "assignment produces `r(N)' misfits"
-
-// Create strata tempvar and local with levels
-tempvar strata
-egen `strata' = group(`stratvars') if `touse'
-qui levelsof `strata', local(Nstrata)
 
 * Dealing with misfits
 *-------------------------------------------------------------------------------
@@ -277,6 +273,10 @@ end
 
 /* 
 CHANGE LOG
+1.4
+	- Fix major bug where the randpack was only shuffled once for all strata,
+	causing systematic allocation of misfits to one particular treatment
+	- Set default value of multiple() to -1 and fix cross checks with uneven
 1.3
 	- sortpreserve as default program option
 	- Improve unequal() fractions sum check to be more precise and account for
