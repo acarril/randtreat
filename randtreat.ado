@@ -188,6 +188,11 @@ quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
 quietly count if mi(treatment) & `touse'
 di as text "assignment produces `r(N)' misfits"
 
+// Create strata tempvar and local with levels
+tempvar strata
+egen `strata' = group(`stratvars') if `touse'
+qui levelsof `strata', local(Nstrata)
+
 * Dealing with misfits
 *-------------------------------------------------------------------------------
 // wglobal
@@ -197,8 +202,11 @@ if "`misfits'" == "wglobal" {
 }
 // wstrata
 if "`misfits'" == "wstrata" {
-	quietly bys `touse' `stratvars' : replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
+	foreach s in `Nstrata' {
+		mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
+		quietly bys `touse' : replace treatment = ///
+			real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `strata'==`s' & `touse'
+	}
 }
 // global
 if "`misfits'" == "global" {
@@ -207,9 +215,6 @@ if "`misfits'" == "global" {
 }
 // strata
 if "`misfits'" == "strata" {
-	tempvar strata
-	egen `strata' = group(`stratvars') if `touse'
-	qui levelsof `strata', local(Nstrata)
 	foreach s in `Nstrata' {
 		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 		quietly bys `touse' : replace treatment = ///
