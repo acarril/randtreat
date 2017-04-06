@@ -11,42 +11,54 @@
 {title:Syntax}
 
 {p 8 16 2}
-{cmd:randtreat} {ifin}
-[{cmd:,} {it:options}]
+{cmd:randtreat} {ifin} {cmd:,}
+{opth generate(newvar)}
+[{it:options}]
 {p_end}
 
 {synoptset 20 tabbed}{...}
 {synopthdr}
 {synoptline}
 {synoptset 20 tabbed}{...}
-{synopt:{opth st:rata(varlist)}} specify a list of variables to conduct a stratified assignment{p_end}
-{synopt:{opth mu:ltiple(integer)}} specify number of treatment groups; default is {cmd:multiple(2)}{p_end}
-{synopt:{opt u:nequal(fractions)}} specify fractions for unequal treatments; default is {cmd:unequal(1/2 1/2)}{p_end}
-{synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see below); {it:method} may be missing (default), strata, global, wstrata or wglobal{p_end}
-{synopt:{opt se:tseed(#)}} specify random-number seed to replicate assignment{p_end}
-{synopt:{opt r:eplace}} replace {bf:treatment} values{p_end}
-{p 4 6 2}
+{syntab:{help randtreat##opt_treatvar:Treatment variable}}
+{p2coldent:* {opth g:enerate(newvar)}} treatment variable{p_end}
+{synopt:{opt replace}} replace treatment variable if {it:newvar} exists{p_end}
+{synopt:{opt se:tseed(#)}} set random-number seed to replicate assignment; see {help set seed}{p_end}
 
+{syntab:{help randtreat##opt_parameters:Assignment parameters}}
+{synopt:{opth st:rata(varlist)}} list of variables for stratified treatment assignment{p_end}
+{synopt:{opt mult:iple(integer)}} number of equal treatment groups; default is {cmd:multiple(2)}{p_end}
+{synopt:{opt un:equal(fractions)}} fractions for unequal treatments; default is {cmd:unequal(1/2 1/2)}{p_end}
+{synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see below); {it:method} may be {cmd:missing} (default), {cmd:strata}, {cmd:global}, {cmd:wstrata} or {cmd:wglobal}{p_end}
+{synoptline}
+{p2colreset}{...}
+{p 4 6 2}* {opt generate(newvar)} is required.{p_end}
+
+
+{marker description}{...}
 {title:Description}
 
 {pstd}
 The {cmd:randtreat} command performs random treatment assignment.
-{cmd:randtreat}'s purpose is twofold: to easily randomize multiple, unequal treatments across strata and to provide methods to deal with "misfits" (see below).
+It's purpose is twofold: to easily randomize multiple, possibly unequal treatments across strata and to provide methods to deal with "misfits",
+an issue first described by Bruhn and McKenzie (2011) and later generalized by Carril (2016) (see below).
+
+{pstd}
 The program presumes that the current dataset corresponds to units (e.g. individuals, firms, etc.) to be randomly allocated to treatment statuses.
+When run, it creates a new variable encoding treatment status, which is randomly assigned.
+The seed can be set with the {opt setseed} option, so the random assignment can be replicated.
+The command defaults to two treatments, more equally proportioned treatments can be specified with the {opt multiple(integer)} option.
+Alternatively, multiple treatments of unequal proportions can be specified with the {opt unequal(fraction)} option.
+A stratified assignment can be performed using the {opt strata(varlist)} option.
+If specified, the random assingment will be carried out for each strata defined by the unique combinations of values of {it:varlist}.
 
 {pstd}
-When run, it creates a new {bf:treatment} variable whose values indicate the random treatment assignment allocation.
-The seed can be set with the {opt setseed()} option, so the random assignment can be replicated.
-Although the command defaults to two treatments, more {it:equally} proportioned treatments can be specified with the {opt multiple()} option.
-Alternatively, multiple treatments of {it:unequal} proportions can be specified with the {opt unequal()} option.
-A stratified assignment can be performed using the {opth strata(varlist)} option.
-If specified, the random assingment will be carried out for each strata defined by the unique combinations of values of {varlist}.
-
-{pstd}
-Whenever the number of observations in a given stratum is not a multiple of the number of treatments or the least common multiple of the treatment fractions, then that stratum is going to have "misfits", that is, observations that can't be neatly distributed among the treatments.
-When run, {cmd:randtreat} reports the number of misfits produced by the assignment in the current dataset.
-Misfits are automatically marked with missing values in the {bf:treatment} variable, but {cmd:randtreat} provides several methods to deal with them.
-The method can be specified with the {opt misfits()} option.
+Whenever the number of observations in a given stratum is not a multiple of the number of treatments or the least common multiple of the treatment fractions,
+then that stratum is going to have "misfits", that is,
+observations that can't be neatly distributed among the treatments.
+When run, {cmd:randtreat} reports the number of misfits produced by the combination of assignment parameters and the current dataset.
+Misfits are automatically marked with missing values in the treatment variable, but additionally {cmd:randtreat} provides several methods to deal with them.
+The method can be specified with the {opt misfits()} option (see below).
 
 {pstd}
 One of the firsts to discuss the misfits problem were Bruhn and McKenzie (2011),
@@ -54,7 +66,29 @@ in a {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-do
 A generalization of the problem and details of the Stata implementation can be found in 
 {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril, 2016}, or my related {browse "http://alvarocarril.com/resources/randtreat":blog post}.
 
-{dlgtab:Options}
+{marker options}{...}
+{title:Options}
+
+{marker opt_treatvar}{...}
+{dlgtab:Treatment variable}
+
+{phang}
+{opt generate(newvar)} specifies the initial value of the random-number seed used to assign treatments.
+It can be set so that the random treatment assignment can be replicated.
+See {help set seed:set seed} for more information.
+
+{phang}
+{opt replace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
+This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid dropping the {bf:treatment} variable every time.
+
+{phang}
+{opt setseed(#)} specifies the initial value of the random-number seed used to assign treatments.
+It can be set so that the random treatment assignment can be replicated.
+See {help set seed:set seed} for more information.
+
+
+{marker opt_parameters}{...}
+{dlgtab:Assignment parameters}
 
 {phang}
 {opth strata(varlist)} is used to perform a stratified allocation on the variables in {varlist}.
@@ -98,15 +132,6 @@ However, this method doesn't ensure the balance of misfits' treatment allocation
 This ensures balance at the the global level and also respects unequal fractions of treatments, even when the number of misfits is large.
 However, this method doesn't ensure the global balance of misfits' treatment allocation (they could differ by more than 1).
 The downside is that this method could produce even greater unbalance at the finer level (in each stratum), specially if the number of misfits is relatively large.
-
-{phang}
-{opt setseed(#)} specifies the initial value of the random-number seed used to assign treatments.
-It can be set so that the random treatment assignment can be replicated.
-See {help set seed:set seed} for more information.
-
-{phang}
-{opt replace} checks that the {bf:treatment} variable exists and, if so, it replaces it.
-This is useful if one is trying different specifications for {cmd:randtreat} and wishes to avoid dropping the {bf:treatment} variable every time.
 
 {title:Examples}
 
@@ -165,6 +190,6 @@ Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, p
 {phang}Bruhn, Miriam, and David McKenzie. 2011. Tools of the Trade: Doing Stratified Randomization with Uneven Numbers in Some Strata. Blog. The World Bank: Impact Evaluations.
 {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-unequal-numbers-in-some-strata"}.
 
-{phang}Carril, Alvaro. 2016. Dealing with misfits in random treatment assignment. Working Paper. DOI: 10.13140/RG.2.1.2859.8807
+{phang}Carril, Alvaro. 2016. Dealing with misfits in random treatment assignment. Stata Journal (forthcoming). DOI: 10.13140/RG.2.1.2859.8807
 {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment"}.
 

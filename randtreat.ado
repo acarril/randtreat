@@ -2,12 +2,15 @@
 program define randtreat, sortpreserve
 	version 11
 
-syntax [if] [in] [ , STrata(varlist numeric) ///
-	MUltiple(integer -1) ///
-	Unequal(string) ///
+syntax [if] [in] [ , ///
+	STrata(varlist numeric) ///
+	MULTiple(integer -1) ///
+	UNequal(string) ///
 	MIsfits(string) ///
 	SEtseed(integer -1) ///
-	Replace ]
+	Generate(name) ///
+	replace ///
+]
 
 *-------------------------------------------------------------------------------
 * Input checks
@@ -53,8 +56,8 @@ else {
 * replace
 // If specified, check if 'treatment' variable exists and drop it before the show starts
 if !missing("`replace'") {
-	capture confirm variable treatment
-	if !_rc drop treatment
+	capture confirm variable `generate'
+	if !_rc drop `generate'
 }
 
 * misfits()
@@ -69,7 +72,7 @@ if !missing("`misfits'") {
 *-------------------------------------------------------------------------------
 
 // Initial setup
-tempvar strata randnum rank_treat misfit cellid obs
+tempvar treatment strata randnum rank_treat misfit cellid obs
 marksample touse, novarlist
 quietly count if `touse'
 if r(N) == 0 error 2000
@@ -186,48 +189,48 @@ sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
 
 // Assign treatments randomly and according to specified proportions in unequal()
-quietly bysort `touse' `stratvars' (`_n') : gen treatment = `first' if `touse'
-quietly by `touse' `stratvars' : replace treatment = ///
+quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = `first' if `touse'
+quietly by `touse' `stratvars' : replace `treatment' = ///
 	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
 	
 // Mark misfits as missing values and display that count
-quietly by `touse' `stratvars' : replace treatment = . if _n > _N - mod(_N,`J')
-quietly count if mi(treatment) & `touse'
+quietly by `touse' `stratvars' : replace `treatment' = . if _n > _N - mod(_N,`J')
+quietly count if mi(`treatment') & `touse'
 di as text "assignment produces `r(N)' misfits"
 
 * Dealing with misfits
 *-------------------------------------------------------------------------------
 // wglobal
 if "`misfits'" == "wglobal" {
-	quietly replace treatment = ///
-		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `touse'
+	quietly replace `treatment' = ///
+		real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`treatment') & `touse'
 }
 // wstrata
 if "`misfits'" == "wstrata" {
 	foreach s in `Nstrata' {
 		mata : st_local("randpackshuffle", invtokens(jumble(tokens(st_local("randpack"))')'))
-		quietly bys `touse' : replace treatment = ///
-			real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(treatment) & `strata'==`s' & `touse'
+		quietly bys `touse' : replace `treatment' = ///
+			real(word("`randpackshuffle'", mod(_n - 1, `J') + 1)) if mi(`treatment') & `strata'==`s' & `touse'
 	}
 }
 // global
 if "`misfits'" == "global" {
-	quietly replace treatment = ///
-		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `touse'
+	quietly replace `treatment' = ///
+		real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`treatment') & `touse'
 }
 // strata
 if "`misfits'" == "strata" {
 	foreach s in `Nstrata' {
 		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
-		quietly bys `touse' : replace treatment = ///
-			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(treatment) & `strata'==`s' & `touse' 
+		quietly bys `touse' : replace `treatment' = ///
+			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`treatment') & `strata'==`s' & `touse' 
 	}
 }
 *-------------------------------------------------------------------------------
 * Closing the curtains
 *-------------------------------------------------------------------------------
 
-quietly replace treatment = treatment-1
+gen `generate' = `treatment'-1
 end
 
 *-------------------------------------------------------------------------------
@@ -276,6 +279,7 @@ CHANGE LOG
 1.4
 	- Fix major bug where the randpack was only shuffled once for all strata,
 	causing systematic allocation of misfits to one particular treatment
+	- Allow to generate(newvar) for treatment var and replace
 	- Set default value of multiple() to -1 and fix cross checks with uneven
 1.3
 	- sortpreserve as default program option
