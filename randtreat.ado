@@ -1,4 +1,4 @@
-*! 1.4 Alvaro Carril 28nov2016
+*! 1.4 Alvaro Carril 05apr2017
 program define randtreat, sortpreserve
 	version 11
 
