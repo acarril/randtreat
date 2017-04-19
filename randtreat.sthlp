@@ -1,5 +1,5 @@
 {smcl}
-{* *! version 1.4 April 2017}{...}
+{* *! version 1.4.1 19apr2017}{...}
 {title:Title}
 
 {p2colset 5 18 22 2}{...}
@@ -162,15 +162,15 @@ Choose very unbalanced treatment fractions and dealing with misfits with and wit
 {title:Notes}
 
 {pstd}
-Beware of (ab)using {opt unequal()} with fractions that yield a large least common multiple (LCM), because that may produce a large number of misfits. For example, consider the following setup:
+Beware of (ab)using {opt unequal()} with fractions with relatively big denominators (or with denominators that yield a large least common multiple), because it may produce a large number of misfits. For example, consider the following setup:
 	
 	{cmd: sysuse bpwide, clear}
-	{cmd: randtreat, generate(treatment) unequal(2/5 1/3 3/20 3/20)}
+	{cmd: randtreat, generate(treatment) unequal(19/70 51/70)}
 	{cmd: tab treatment, missing}
 	
 {pstd}
-Since the LCM of the specified fractions is 60, the theoretical maximum number of misfits per stratum could be 59.
-In this particular dataset, this configuration produces 58 misfits, which is a relatively large number given that the dataset has 120 observations.
+Since the LCM of the specified fractions is 70, the theoretical maximum number of misfits per stratum could be 69.
+In this particular dataset, this configuration produces 50 misfits, which is a relatively large number given that the dataset has 120 observations.
 
 {marker author}{...}
 {title:Author}
