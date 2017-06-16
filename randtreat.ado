@@ -1,16 +1,17 @@
-*! 1.4 Alvaro Carril 05apr2017
+*! 1.4.1 Alvaro Carril 16jun2017
 program define randtreat, sortpreserve
 	version 11
 
-syntax [if] [in] [ , ///
-	STrata(varlist numeric) ///
-	MULTiple(integer -1) ///
-	UNequal(string) ///
-	MIsfits(string) ///
-	SEtseed(integer -1) ///
+syntax [if] [in] , ///
 	Generate(name) ///
-	replace ///
-]
+	[ ///
+		STrata(varlist numeric) ///
+		MULTiple(integer -1) ///
+		UNequal(string) ///
+		MIsfits(string) ///
+		SEtseed(integer -1) ///
+		replace ///
+	]
 
 *-------------------------------------------------------------------------------
 * Input checks
@@ -18,6 +19,13 @@ syntax [if] [in] [ , ///
 
 * stratvars()
 local stratvars `strata'
+
+* generate()
+capture confirm variable `generate'
+if !_rc {
+	di as error "variable {bf}`generate'{sf} already defined"
+	exit 110
+}
 
 * unequal()
 // If not specified, complete it to be equal fractions according to mult()
@@ -276,8 +284,10 @@ end
 
 /* 
 CHANGE LOG
+1.4.1
+	- Make gen() mandatory option, add check and exit before anything is done
 1.4
-	- Fix major bug where the randpack was only shuffled once for all strata,
+	- Change behaviour of randpack: it only was shuffled once for all strata,
 	causing systematic allocation of misfits to one particular treatment
 	- Allow to generate(newvar) for treatment var and replace
 	- Set default value of multiple() to -1 and fix cross checks with uneven
