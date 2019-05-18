@@ -52,9 +52,12 @@ an issue first described by Bruhn and McKenzie (2011) and later generalized by C
 The program presumes that the current dataset corresponds to units (e.g. individuals, firms, etc.) to be randomly allocated to treatment statuses.
 When run, it creates a new variable encoding treatment status, which is randomly assigned.
 The seed can be set with the {opt setseed} option, so the random assignment can be replicated.
-The command defaults to two treatments, more equally proportioned treatments can be specified with the {opt multiple(integer)} option.
-Alternatively, multiple treatments of unequal proportions can be specified with the {opt unequal(fraction)} option.
-A stratified assignment can be performed using the {opt strata(varlist)} option.
+The command defaults to two treatments, but more equally proportioned treatments can be specified with the {opt multiple(integer)} option.
+Alternatively, multiple treatments of {it:unequal} proportions can be specified with the {opt unequal(fraction)} option.
+If the number of treated units is fixed, then the {opt ntreated(numlist)} option is preferable.
+
+{pstd}
+All assignments can be carried out across strata (or cells) defined using the {opt strata(varlist)} option.
 If specified, the random assignment will be carried out for each stratum defined by the unique combinations of values of {it:varlist}.
 
 {pstd}
@@ -65,6 +68,7 @@ When run, {cmd:randtreat} reports the number of misfits produced by the combinat
 Misfits are automatically marked with missing values in the treatment variable, but additionally {cmd:randtreat} provides several methods to deal with them.
 The method can be specified with the {opt misfits()} option (see {help randtreat##opt_misfits:below}).
 
+
 {marker options}{...}
 {title:Options}
 
@@ -72,7 +76,7 @@ The method can be specified with the {opt misfits()} option (see {help randtreat
 {dlgtab:Treatment variable}
 
 {phang}
-{opt generate(newvar)} creates a new variable encoding randomly assigned treatment status. Treatment values are consecutive nonnegative integers.
+{opt generate(newvar)} creates a new variable encoding randomly assigned treatment status. Treatment values are consecutive nonnegative integers, and it is implicitly assumed that treatment 0 is the control group.
 
 {phang}
 {opt replace} replaces the treatment {it:newvar} if it already exists.
@@ -92,6 +96,10 @@ Notice that this option is almost identical to using {cmd:by} (see {manhelp by D
 {dlgtab:Assignment parameters}
 
 {phang}
+All of these options are mutually exclusive.
+Additionally, all these options apply to each stratum if the {opth strata(varlist)} option is specified.
+
+{phang}
 {opt multiple(integer)} specifies the number of equally proportioned treatments to be assigned.
 The default (and minimum) is {cmd:multiple(2)}, unless the {opt unequal()} option is specified, in which case this option is redundant and should not be specified (see below).
 
@@ -106,7 +114,18 @@ For example, {cmd:unequal(1/2 1/4 1/4)} will randomly assign half of the observa
 Notice that this option implicitly defines the number of treatments (e.g. 3), so when {opt unequal()} is used, {opt mult()} is redundant and should be avoided.
 
 {phang}
+{opth ntreated(numlist)} specifies a fixed number of treated units in each treatment, as opposed to a fraction of the total sample (or strata).
+This option is useful when implementing assignments where the number of treatments is set, which is often the case in real-world applications.
+
+{pmore}
+For example, {cmd:ntreated(6 4)} will randomly assign 6 units to treatment 1 and 4 units to treatment 2, with the rest of the units assigned to the control group (i.e. treatment 0).
+Note that this type of assignment can't produce any misfits.
+
+
 {marker opt_misfits}{...}
+{dlgtab:Misfits}
+
+{phang}
 {opt misfits(method)} specifies which method to use in order to deal with misfits.
 More details on the internal workings of these methods are available in
 {browse "https://www.stata-journal.com/article.html?article=st0490":Carril (2017)}
@@ -134,6 +153,7 @@ However, this method doesn't ensure the balance of misfits' treatment allocation
 This ensures balance at the the global level and also respects unequal fractions of treatments, even when the number of misfits is large.
 However, this method doesn't ensure the global balance of misfits' treatment allocation (they could differ by more than 1).
 The downside is that this method could produce even greater unbalance at the finer level (in each stratum), specially if the number of misfits is relatively large.
+
 
 {marker examples}{...}
 {title:Examples}
@@ -163,6 +183,7 @@ Choose very unbalanced treatment fractions and dealing with misfits with and wit
 	{cmd:randtreat, generate(treatment) replace unequal(2/5 1/5 1/5 1/5) misfits(global) setseed(12345)}
 	{cmd:randtreat, generate(treatment) replace unequal(2/5 1/5 1/5 1/5) misfits(wglobal) setseed(12345)}
 
+
 {title:Notes}
 
 {pstd}
@@ -176,12 +197,14 @@ Beware of (ab)using {opt unequal()} with fractions with relatively big denominat
 Since the LCM of the specified fractions is 70, the theoretical maximum number of misfits per stratum is 69.
 In this particular dataset, this configuration produces 50 misfits, which is a relatively large number given that the dataset has 120 observations.
 
+
 {marker author}{...}
 {title:Author}
 
 {pstd}Alvaro Carril{break}
 Princeton University{break}
 acarril@princeton.edu
+
 
 {marker acknowledgments}{...}
 {title:Acknowledgments}
@@ -190,6 +213,7 @@ acarril@princeton.edu
 I'm indebted to several "random helpers" at the Random Help Google user group and in the Statalist Forum, who provided coding advice and snippets.
 Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, put up with my incoherent ideas and helped me steer this into something mildly useful.
 
+
 {marker citation}{...}
 {title:Citation}
 
@@ -197,7 +221,8 @@ Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, p
 If you use this software in your work, please cite it as follows:
 
 {p 8 8}
-Alvaro Carril, 2015. "RANDTREAT: Stata module to randomly assign treatments uneven treatments and deal with misfits," Statistical Software Components S458106, Boston College Department of Economics, revised May 2019.
+Alvaro Carril, 2015. "RANDTREAT: Stata module to randomly assign uneven treatments and deal with misfits," Statistical Software Components S458106, Boston College Department of Economics, revised May 2019.
+
 
 {marker references}{...}
 {title:References}
