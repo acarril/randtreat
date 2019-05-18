@@ -25,19 +25,19 @@
 {p2coldent:* {opth g:enerate(newvar)}} generate new treatment variable encoding treatment status{p_end}
 {synopt:{opt replace}} replace treatment variable if {it:newvar} exists{p_end}
 {synopt:{opt se:tseed(#)}} set random-number seed to replicate assignment; see {help set seed}{p_end}
-{synopt:{opth st:rata(varlist)}} list of variables for stratified treatment assignment{p_end}
 
-  † {help randtreat##opt_parameters:Assignment parameters}
-{synopt:{opt mult:iple(integer)}} number of equal treatment groups; default is {cmd:multiple(2)}{p_end}
-{synopt:{opt un:equal(fractions)}} fractions for unequal treatments (see {help randtreat##opt_unequal:below}); default is {cmd:unequal(1/2 1/2)}{p_end}
-{synopt:{opth ntreat:ed(numlist)}} list of integers specifying fixed number of treated units in each treatment{p_end}
+{syntab:{help randtreat##opt_parameters:Assignment parameters}}
+{synopt:{opth st:rata(varlist)}} list of variables for stratified treatment assignment{p_end}
+{p2coldent:† {opt mult:iple(integer)}} number of equal treatment groups; default is {cmd:multiple(2)}{p_end}
+{p2coldent:† {opt un:equal(fractions)}} fractions for unequal treatments (see {help randtreat##opt_unequal:below}); default is {cmd:unequal(1/2 1/2)}{p_end}
+{p2coldent:† {opth ntreat:ed(numlist)}} fixed number of treated units for each treatment; e.g. {cmd:ntreated(6 4)} specifies 6 units in treatment 1 and 4 in treatment 2, rest are controls.{p_end}
 
 {syntab:{help randtreat##opt_misfits:Misfits}}
 {synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see {help randtreat##opt_misfits:below}); {it:method} may be {cmd:missing} (default), {cmd:strata}, {cmd:global}, {cmd:wstrata} or {cmd:wglobal}{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}* {opt generate(newvar)} is required.{p_end}
-{p 4 6 2}† options in this category are mutually exclusive.{p_end}
+{p 4 6 2}† these options are mutually exclusive.{p_end}
 
 
 {marker description}{...}
@@ -82,14 +82,14 @@ The method can be specified with the {opt misfits()} option (see {help randtreat
 It can be set so that the random treatment assignment can be replicated.
 See {help set seed:set seed} for more information.
 
-
-{marker opt_parameters}{...}
-{dlgtab:Assignment parameters}
-
 {phang}
 {opth strata(varlist)} is used to perform a stratified allocation on the variables in {varlist}.
 If specified, the random assignment will be carried out in each stratum identified by the unique combination of the {varlist} variables' values.
 Notice that this option is almost identical to using {cmd:by} (see {manhelp by D}), except that the command is not independently run for the specified variables, because global existence of misfits across strata must be accounted for.
+
+
+{marker opt_parameters}{...}
+{dlgtab:Assignment parameters}
 
 {phang}
 {opt multiple(integer)} specifies the number of equally proportioned treatments to be assigned.
@@ -189,6 +189,15 @@ acarril@princeton.edu
 {pstd}
 I'm indebted to several "random helpers" at the Random Help Google user group and in the Statalist Forum, who provided coding advice and snippets.
 Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, put up with my incoherent ideas and helped me steer this into something mildly useful.
+
+{marker citation}{...}
+{title:Citation}
+
+{pstd}
+If you use this software in your work, please cite it as follows:
+
+{pstd}
+Alvaro Carril, 2015. "RANDTREAT: Stata module to randomly assign treatments uneven treatments and deal with misfits," Statistical Software Components S458106, Boston College Department of Economics, revised May 2019.
 
 {marker references}{...}
 {title:References}
