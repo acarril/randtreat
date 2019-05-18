@@ -1,4 +1,4 @@
-*! 1.4.1 Alvaro Carril 16jun2017
+*! 1.5.0 Alvaro Carril 18may2019
 program define randtreat, sortpreserve
 	version 11
 
@@ -6,6 +6,7 @@ syntax [if] [in] , ///
 	Generate(name) ///
 	[ ///
 		STrata(varlist numeric) ///
+		NTREATed(numlist) ///
 		MULTiple(integer -1) ///
 		UNequal(string) ///
 		MIsfits(string) ///
@@ -119,7 +120,7 @@ foreach f of numlist 1/`T' {
 // tokenize unequal() fractions with 'u' stub
 tokenize `unequal'
 local i = 1
-while "``i''" != "" { 
+while "``i''" != "" {
 	local u`i' `"``i''"'
 	local i = `i' + 1
 }
@@ -196,17 +197,29 @@ gen double `randnum' = runiform()
 sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
 
-// Assign treatments randomly and according to specified proportions in unequal()
-quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = `first' if `touse'
-quietly by `touse' `stratvars' : replace `treatment' = ///
-	real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
-	
-// Mark misfits as missing values and display that count
-quietly by `touse' `stratvars' : replace `treatment' = . if _n > _N - mod(_N,`J')
-quietly count if mi(`treatment') & `touse'
-di as text "assignment produces `r(N)' misfits"
+if "`ntreated'" == "" {
+	// Assign treatments randomly and according to specified proportions in unequal()
+	quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = `first' if `touse'
+	quietly by `touse' `stratvars' : replace `treatment' = ///
+		real(word("`randpack'", mod(_n - 1, `J') + 1)) if _n > 1 & `touse'
 
-* Dealing with misfits
+	// Mark misfits as missing values and display that count
+	quietly by `touse' `stratvars' : replace `treatment' = . if _n > _N - mod(_N,`J')
+	quietly count if mi(`treatment') & `touse'
+	di as text "assignment produces `r(N)' misfits"
+}
+// todo: clean this up
+else {
+	quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = 1 if `touse'
+	foreach t in `ntreated' {
+		local t_accum = `t_accum' + `t'
+		local index : list posof "`t'" in ntreated
+		quietly by `touse' `stratvars' : replace `treatment' = ///
+			`index'+1 if _n <= `t_accum' & `treatment' == 1 & `touse'
+	}
+}
+
+* Dealing with misfitsT
 *-------------------------------------------------------------------------------
 // wglobal
 if "`misfits'" == "wglobal" {
@@ -231,7 +244,7 @@ if "`misfits'" == "strata" {
 	foreach s in `Nstrata' {
 		mata : st_local("treatmentsshuffle", invtokens(jumble(tokens(st_local("treatments"))')'))
 		quietly bys `touse' : replace `treatment' = ///
-			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`treatment') & `strata'==`s' & `touse' 
+			real(word("`treatmentsshuffle'", mod(_n - 1, `T') + 1)) if mi(`treatment') & `strata'==`s' & `touse'
 	}
 }
 *-------------------------------------------------------------------------------
@@ -282,8 +295,10 @@ end
 
 ********************************************************************************
 
-/* 
+/*
 CHANGE LOG
+1.5
+	- Add option to specify fixed number of trated units
 1.4.1
 	- Make gen() mandatory option, add check and exit before anything is done
 1.4
@@ -326,7 +341,7 @@ CHANGE LOG
 1.0.2
 	- Stop the use of egenmore() repeat for the sequence filling (thanks to Nick
 	Cox).
-	- Code for treatment assignment is now case-independent of wether a varlist 
+	- Code for treatment assignment is now case-independent of wether a varlist
 	is specified or not
 	- Fixed an bug in which the assignment without varlist would not be
 	reproducible, even after setting the seed
@@ -341,4 +356,3 @@ TODOS (AND IDEAS TO MAKE RANDTREAT EVEN COOLER)
 - Support for [by](?) May be redundant/confusing.
 - Store in e() and r(): seed? seed stage?
 */
-
