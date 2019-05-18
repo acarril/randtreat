@@ -196,7 +196,7 @@ Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, p
 {pstd}
 If you use this software in your work, please cite it as follows:
 
-{pstd}
+{p 8 8}
 Alvaro Carril, 2015. "RANDTREAT: Stata module to randomly assign treatments uneven treatments and deal with misfits," Statistical Software Components S458106, Boston College Department of Economics, revised May 2019.
 
 {marker references}{...}
