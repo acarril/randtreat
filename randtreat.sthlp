@@ -25,15 +25,19 @@
 {p2coldent:* {opth g:enerate(newvar)}} generate new treatment variable encoding treatment status{p_end}
 {synopt:{opt replace}} replace treatment variable if {it:newvar} exists{p_end}
 {synopt:{opt se:tseed(#)}} set random-number seed to replicate assignment; see {help set seed}{p_end}
-
-{syntab:{help randtreat##opt_parameters:Assignment parameters}}
 {synopt:{opth st:rata(varlist)}} list of variables for stratified treatment assignment{p_end}
+
+  † {help randtreat##opt_parameters:Assignment parameters}
 {synopt:{opt mult:iple(integer)}} number of equal treatment groups; default is {cmd:multiple(2)}{p_end}
 {synopt:{opt un:equal(fractions)}} fractions for unequal treatments (see {help randtreat##opt_unequal:below}); default is {cmd:unequal(1/2 1/2)}{p_end}
+{synopt:{opth ntreat:ed(numlist)}} list of integers specifying fixed number of treated units in each treatment{p_end}
+
+{syntab:{help randtreat##opt_misfits:Misfits}}
 {synopt:{opt mi:sfits(method)}} specify a method to deal with "misfits" (see {help randtreat##opt_misfits:below}); {it:method} may be {cmd:missing} (default), {cmd:strata}, {cmd:global}, {cmd:wstrata} or {cmd:wglobal}{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}* {opt generate(newvar)} is required.{p_end}
+{p 4 6 2}† options in this category are mutually exclusive.{p_end}
 
 
 {marker description}{...}
@@ -41,7 +45,7 @@
 
 {pstd}
 The {cmd:randtreat} command performs random treatment assignment.
-It's purpose is twofold: to easily randomize multiple, possibly unequal treatments across strata and to provide methods to deal with "misfits",
+Its purpose is twofold: to easily randomize multiple, possibly unequal treatments across strata and to provide methods to deal with "misfits",
 an issue first described by Bruhn and McKenzie (2011) and later generalized by Carril (2017).
 
 {pstd}
@@ -106,7 +110,7 @@ Notice that this option implicitly defines the number of treatments (e.g. 3), so
 {opt misfits(method)} specifies which method to use in order to deal with misfits.
 More details on the internal workings of these methods are available in
 {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril (2017)}
-or in my related {browse "http://alvarocarril.com/resources/randtreat":blog post}.
+or in my related {browse "https://acarril.github.io/posts/randtreat":blog post}.
 The available {it:method}s are:
 
 {phang2}
@@ -153,7 +157,7 @@ Define stratification variables and unequal treatments, dealing with misfits:
 	{cmd:randtreat, generate(treatment) replace unequal(1/2 1/3 1/6) strata(sex agegrp) misfits(strata)}
 	{cmd:randtreat, generate(treatment) replace unequal(1/2 1/3 1/6) strata(sex agegrp) misfits(global)}
 
-{pstd}	
+{pstd}
 Choose very unbalanced treatment fractions and dealing with misfits with and without weights:
 
 	{cmd:randtreat, generate(treatment) replace unequal(2/5 1/5 1/5 1/5) misfits(global) setseed(12345)}
@@ -163,21 +167,21 @@ Choose very unbalanced treatment fractions and dealing with misfits with and wit
 
 {pstd}
 Beware of (ab)using {opt unequal()} with fractions with relatively big denominators (or with denominators that yield a large least common multiple), because it may produce a large number of misfits. For example, consider the following setup:
-	
+
 	{cmd: sysuse bpwide, clear}
 	{cmd: randtreat, generate(treatment) unequal(19/70 51/70)}
 	{cmd: tab treatment, missing}
-	
+
 {pstd}
-Since the LCM of the specified fractions is 70, the theoretical maximum number of misfits per stratum could be 69.
+Since the LCM of the specified fractions is 70, the theoretical maximum number of misfits per stratum is 69.
 In this particular dataset, this configuration produces 50 misfits, which is a relatively large number given that the dataset has 120 observations.
 
 {marker author}{...}
 {title:Author}
 
 {pstd}Alvaro Carril{break}
-Research Analyst at J-PAL LAC{break}
-acarril@fen.uchile.cl
+Princeton University{break}
+acarril@princeton.edu
 
 {marker acknowledgments}{...}
 {title:Acknowledgments}
@@ -194,4 +198,3 @@ Colleagues at the J-PAL LAC office, specially Olivia Bordeu and Diego Escobar, p
 
 {phang}Carril, Alvaro. 2017. Dealing with misfits in random treatment assignment. Stata Journal (forthcoming). DOI: 10.13140/RG.2.1.2859.8807
 {browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment"}.
-
