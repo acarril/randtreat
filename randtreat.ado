@@ -21,11 +21,14 @@ syntax [if] [in] , ///
 * stratvars()
 local stratvars `strata'
 
-* generate()
+* generate() and replace()
 capture confirm variable `generate'
 if !_rc {
-	di as error "variable {bf}`generate'{sf} already defined"
-	exit 110
+	if missing("`replace'") {
+		di as error "variable {bf}`generate'{sf} already defined"
+		exit 110
+	}
+	else drop `generate'
 }
 
 * unequal()
@@ -60,13 +63,6 @@ else {
 		}
 		macro shift
 	}
-}
-
-* replace
-// If specified, check if 'treatment' variable exists and drop it before the show starts
-if !missing("`replace'") {
-	capture confirm variable `generate'
-	if !_rc drop `generate'
 }
 
 * misfits()
@@ -299,6 +295,7 @@ end
 CHANGE LOG
 1.5
 	- Add option to specify fixed number of trated units
+	- Fix inconsistency in replace() option
 1.4.1
 	- Make gen() mandatory option, add check and exit before anything is done
 1.4
