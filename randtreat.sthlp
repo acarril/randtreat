@@ -109,7 +109,7 @@ Notice that this option implicitly defines the number of treatments (e.g. 3), so
 {marker opt_misfits}{...}
 {opt misfits(method)} specifies which method to use in order to deal with misfits.
 More details on the internal workings of these methods are available in
-{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment":Carril (2017)}
+{browse "https://www.stata-journal.com/article.html?article=st0490":Carril (2017)}
 or in my related {browse "https://acarril.github.io/posts/randtreat":blog post}.
 The available {it:method}s are:
 
@@ -205,5 +205,5 @@ Alvaro Carril, 2015. "RANDTREAT: Stata module to randomly assign treatments unev
 {phang}Bruhn, Miriam, and David McKenzie. 2011. Tools of the Trade: Doing Stratified Randomization with Uneven Numbers in Some Strata. Blog. The World Bank: Impact Evaluations.
 {browse "http://blogs.worldbank.org/impactevaluations/tools-of-the-trade-doing-stratified-randomization-with-unequal-numbers-in-some-strata"}.
 
-{phang}Carril, Alvaro. 2017. Dealing with misfits in random treatment assignment. Stata Journal (forthcoming). DOI: 10.13140/RG.2.1.2859.8807
-{browse "https://www.researchgate.net/publication/292091060_Dealing_with_misfits_in_random_treatment_assignment"}.
+{phang}Carril, Alvaro. 2017. "Dealing with misfits in random treatment assignment". Stata Journal, StataCorp LP, vol. 17(3), pages 652-667, September.
+{browse "https://www.stata-journal.com/article.html?article=st0490"}.
