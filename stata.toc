@@ -1,6 +1,7 @@
-v 1.5
+v 1.5.1
 d Materials by Alvaro Carril
 d Princeton University
 d acarril@princeton.edu
+d https://github.com/acarril/randtreat
 
 p randtreat
