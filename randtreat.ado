@@ -1,4 +1,4 @@
-*! 1.5.0 Alvaro Carril 18may2019
+*! 1.5.1 Alvaro Carril 12jun2019
 program define randtreat, sortpreserve
 	version 11
 
@@ -83,7 +83,7 @@ quietly count if `touse'
 if r(N) == 0 error 2000
 
 // Create strata tempvar and local with levels
-egen `strata' = group(`stratvars') if `touse'
+quietly egen `strata' = group(`stratvars') if `touse'
 qui levelsof `strata', local(Nstrata)
 
 // Set seed
@@ -193,6 +193,8 @@ gen double `randnum' = runiform()
 sort `touse' `stratvars' `randnum', stable
 gen long `obs' = _n
 
+// di "NTREATED: `ntreated'"
+
 if "`ntreated'" == "" {
 	// Assign treatments randomly and according to specified proportions in unequal()
 	quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = `first' if `touse'
@@ -208,14 +210,19 @@ if "`ntreated'" == "" {
 else {
 	quietly bysort `touse' `stratvars' (`_n') : gen `treatment' = 1 if `touse'
 	foreach t in `ntreated' {
+		// di "t:`t'"
 		local t_accum = `t_accum' + `t'
-		local index : list posof "`t'" in ntreated
+		// di "t_accum:`t_accum'"
+		// local index : list posof "`t'" in ntreated
+		local index = `index' + 1
+		// di "index:`index'"
 		quietly by `touse' `stratvars' : replace `treatment' = ///
 			`index'+1 if _n <= `t_accum' & `treatment' == 1 & `touse'
+		// di "-----"
 	}
 }
 
-* Dealing with misfitsT
+* Dealing with misfits
 *-------------------------------------------------------------------------------
 // wglobal
 if "`misfits'" == "wglobal" {
