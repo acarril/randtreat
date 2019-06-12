@@ -3,13 +3,13 @@
 // DO NOT FORGET to update the version of the package, if changed!
 // for more information visit http://github.com/haghish/github
 
-make randtreat,  toc pkg  version(1.5)                                       ///
+make randtreat, replace  toc pkg  version(1.5.1)                             ///
      license("MIT")                                                          ///
      author("Alvaro Carril")                                                 ///
      affiliation("Princeton University")                                     ///
      email("acarril@princeton.edu")                                          ///
-     url("")                                                                 ///
+     url("https://github.com/acarril/randtreat")                             ///
      title("Random treatment assignment with unequal treatment fractions and dealing with misfits.") ///
      description("")                                                         ///
      install("randtreat.ado")                                                ///
-     iancillary("randtreat.sthlp")                                          
+     ancillary("randtreat.sthlp")                                          
