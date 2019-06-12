@@ -1,5 +1,5 @@
 v 1.5.1
-d 'RANDTREAT': Random treatment assignment with unequal treatment fractions and dealing with misfits.
+d 'RANDTREAT': **, a practical issue that arises in treatment assignment whenever observations can't be neatly distributed among treatments. The command performs all tasks in a way that marks misfit observations and provides several methods to deal with those misfits.
 d 
 d Distribution-Date:   20190612
 d License: MIT
