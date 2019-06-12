@@ -10,11 +10,26 @@ Stata program for random treatment assignment with unequal treatment fractions a
 
 ## Installation
 
-The preferred installation method is via SSC:
+### Github repository
+
+You can install the most updated version of this program directly from Github.
+This can be done without any additional packages by executing
+```stata
+net install randtreat, from("https://raw.github.com/acarril/randtreat/master/") replace
+```
+However, it might be more convenient to install and maintain it using Haghish's excellent [Github package](https://github.com/haghish/github):
+```stata
+net install github, from("https://haghish.github.io/github/")
+github install acarril/randtreat
+```
+
+### SSC repository
+
+An outdated version of this program can also be found in the SSC repository:
+
 ```stata
 ssc install randtreat
 ```
-Alternatively, you may install it manually by cloning the contents of this repository and adding them to your `ado` path.
 
 
 ## References
