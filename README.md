@@ -25,7 +25,7 @@ github install acarril/randtreat
 
 ### SSC repository
 
-An outdated version of this program can also be found in the SSC repository:
+An (outdated) version of this program can also be found in the SSC repository:
 
 ```stata
 ssc install randtreat
